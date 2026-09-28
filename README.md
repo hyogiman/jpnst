@@ -24,14 +24,27 @@
 
 ## 휴대폰에서 실행하기
 
-### 방법 1. GitHub Pages로 배포 (추천)
-1. 저장소 **Settings → Pages** 에서 Source를 `Deploy from a branch`, 브랜치와 `/ (root)` 폴더를 선택해 저장합니다.
-2. 잠시 후 표시되는 주소(`https://<사용자명>.github.io/jpnst/`)를 휴대폰 브라우저로 엽니다.
-3. **홈 화면에 추가**하면 앱처럼 전체 화면으로 실행되고, 한 번 연 뒤에는 오프라인에서도 동작합니다.
+### 방법 1. GitHub Pages + 도메인 `2nhyeok.kr` (현재 설정)
+앱은 `main` 브랜치 루트에 있고, `CNAME` 파일에 `2nhyeok.kr`이 지정되어 있습니다.
+1. 저장소 **Settings → Pages** 에서 Source를 `Deploy from a branch`, 브랜치 `main`, 폴더 `/ (root)`로 저장합니다.
+2. 같은 화면의 **Custom domain**에 `2nhyeok.kr`이 들어가 있는지 확인합니다.
+3. 도메인 업체(DNS 관리)에서 아래 레코드를 추가합니다.
+
+   | 호스트 | 유형 | 값 |
+   |---|---|---|
+   | `@` | A | `185.199.108.153` |
+   | `@` | A | `185.199.109.153` |
+   | `@` | A | `185.199.110.153` |
+   | `@` | A | `185.199.111.153` |
+   | `www` | CNAME | `hyogiman.github.io` |
+
+   (IPv6를 쓰려면 AAAA 레코드 `2606:50c0:8000::153`, `2606:50c0:8001::153`, `2606:50c0:8002::153`, `2606:50c0:8003::153`)
+4. DNS가 반영되면(보통 몇 분~최대 48시간) Pages 화면에서 **Enforce HTTPS**를 켭니다.
+5. 휴대폰에서 `https://2nhyeok.kr`을 열고 **홈 화면에 추가**하면 앱처럼 전체 화면으로 실행되고, 한 번 연 뒤에는 오프라인에서도 동작합니다.
    - iPhone(Safari): 공유 버튼 → 홈 화면에 추가
    - Android(Chrome): 메뉴 → 홈 화면에 추가 / 앱 설치
 
-> 저장소가 비공개(private)라면 요금제에 따라 Pages 사용이 제한될 수 있습니다.
+> 저장소가 비공개(private)라면 요금제에 따라 Pages 사용이 제한될 수 있습니다. 설정 방법은 GitHub 문서 "Managing a custom domain for your GitHub Pages site"를 참고하세요.
 
 ### 방법 2. 단일 파일로 열기
 `dist/anime-nihongo.html` 하나에 앱 전체가 들어 있습니다. 이 파일을 휴대폰으로 옮겨 브라우저에서 열면 됩니다. (글꼴만 인터넷에서 불러오며, 없으면 기본 글꼴로 표시됩니다.)
