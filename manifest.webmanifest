@@ -1,0 +1,18 @@
+{
+  "name": "アニ耳 — 애니 청해 일본어 180일",
+  "short_name": "アニ耳",
+  "description": "히라가나부터 애니 대사 청해까지, 하루 한 화 180일 코스",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F3F5FA",
+  "theme_color": "#1E50A2",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

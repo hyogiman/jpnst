@@ -1,0 +1,14 @@
+{
+  "name": "animimi",
+  "version": "1.0.0",
+  "private": true,
+  "description": "アニ耳 — 한국어 화자를 위한 애니 청해 일본어 180일 코스 (모바일 웹앱)",
+  "scripts": {
+    "validate": "node tools/validate.js",
+    "curriculum": "node tools/curriculum.js > docs/CURRICULUM.md",
+    "build": "node tools/build.js",
+    "serve": "npx http-server -p 8080 .",
+    "smoke": "node tools/smoke.js"
+  },
+  "license": "UNLICENSED"
+}
