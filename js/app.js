@@ -581,7 +581,7 @@
     var s = st().settings;
     var vopts = SP.voices.map(function (v) { return '<option value="' + esc(v.name) + '"' + (SP.voice && SP.voice.name === v.name ? ' selected' : '') + '>' + esc(v.name) + '</option>'; }).join('');
     return '<div class="sec-title"><h2>설정</h2><span class="jp">せってい</span></div><section class="card">' +
-      '<div class="set-row"><div><div class="l">음성 방식</div><div class="d">녹음 음성은 어떤 휴대폰·브라우저에서도 같은 소리로 나옵니다</div></div><div class="seg">' + [['clips', '녹음 음성'], ['device', '기기 음성']].map(function (o) { return '<button class="' + ((s.engine || 'clips') === o[0] ? 'on' : '') + '" data-act="setEngine" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join('') + '</div></div>' +
+      '<div class="set-row"><div><div class="l">음성 방식</div><div class="d">녹음 음성(VOICEVOX:冥鳴ひまり·玄野武宏)은 어떤 휴대폰·브라우저에서도 같은 소리로 나옵니다</div></div><div class="seg">' + [['clips', '녹음 음성'], ['device', '기기 음성']].map(function (o) { return '<button class="' + ((s.engine || 'clips') === o[0] ? 'on' : '') + '" data-act="setEngine" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join('') + '</div></div>' +
       (s.engine === 'device' ? '<div class="set-row"><div><div class="l">기기 일본어 음성</div><div class="d">' + (SP.deviceHasJa() ? '설치된 일본어 음성 ' + SP.voices.length + '개' : '이 기기·브라우저에서 일본어 음성을 찾지 못했어요') + '</div></div>' + (vopts ? '<select id="voiceSel" data-input="voice">' + vopts + '</select>' : '') + '</div>' : '') +
       '<div class="set-row"><div><div class="l">말하기 속도</div><div class="d">기본 속도 <span class="tabnum" id="rateVal">' + s.rate.toFixed(2) + '</span>배</div></div><input id="rateRange" type="range" min="0.6" max="1.3" step="0.05" value="' + s.rate + '" data-input="rate"></div>' +
       '<div class="set-row"><div class="l">음성 테스트</div>' + audioBtn('アニメを字幕なしで楽しめるように、毎日少しずつ頑張りましょう。') + '</div>' +
@@ -604,7 +604,7 @@
       '<p><b>한국어 화자 맞춤</b> · 어순·조사·한자음이 닮은 점을 적극 활용해 설명합니다(예: 約束 = 약속).</p>' +
       '<p><b>구어 집중</b> · 교과서 존댓말만으로는 애니가 들리지 않기 때문에 반말·문말 조사·축약(〜てる, 〜ちゃう)·역할어를 따로 다룹니다.</p>' +
       '<p><b>게임 요소</b> · 스탬프 카드, 연속 학습, 레벨, 랭크, 보스전, 배지. 자기결정성 이론이 말하는 "유능감"을 매일 확인할 수 있도록 설계했습니다. 틀려도 목숨이 깎이지 않고(보스전 제외), 몇 번이든 다시 도전할 수 있어요.</p>' +
-      '<p class="small muted">음성: Open JTalk로 합성한 녹음 음성. 여성 음성 HTS voice "Mei"(MMDAgent Project), 남성 음성 HTS voice "NIT ATR503 M001"(HTS Working Group) — 모두 © Nagoya Institute of Technology, CC BY 3.0 (creativecommons.org/licenses/by/3.0).</p>' +
+      '<p class="small muted">음성: VOICEVOX:冥鳴ひまり (여성) · VOICEVOX:玄野武宏 (남성) — 신경망 음성 합성 소프트웨어 VOICEVOX로 미리 만든 녹음입니다. 글자 하나는 모음을 길게 늘여 또렷하게, 단어는 한자 표기를 기준으로 합성해 억양이 자연스럽도록 했습니다.</p>' +
       '<p class="small muted">현실적인 기대치: 6개월 코스를 마치면 일상·학원물의 쉬운 대사와 자주 나오는 표현은 상당 부분 알아들을 수 있지만, 모든 애니를 자막 없이 완전히 이해하려면 이후에도 꾸준한 시청과 어휘 확장이 필요합니다.</p>' +
       '</div></details>';
   }

@@ -56,19 +56,25 @@ npx http-server -p 8080 .
 ```
 
 ## 음성
-- 기본은 **녹음 음성**입니다. 모든 가나·단어·예문·대사(2,086개 클립, 약 10MB)를 미리 합성해 `audio/`에 넣어 두었기 때문에, 휴대폰에 일본어 음성이 없어도, 카카오톡 같은 앱 안 브라우저에서도 소리가 납니다. 챕터별 묶음 파일로 나뉘어 있어 처음 여는 챕터만 받으며, 한 번 받으면 오프라인에서도 재생됩니다.
-- 장면 대화는 두 화자를 여성·남성 음성으로 구분합니다.
+- 기본은 **녹음 음성**입니다. 모든 가나·단어·예문·대사(2,086개 클립, 약 __MB__MB)를 신경망 음성 합성 소프트웨어 **VOICEVOX**로 미리 만들어 `audio/`에 넣어 두었기 때문에, 휴대폰에 일본어 음성이 없어도, 카카오톡 같은 앱 안 브라우저에서도 같은 소리가 납니다. 챕터별 묶음 파일로 나뉘어 있어 처음 여는 챕터만 받으며, 한 번 받으면 오프라인에서도 재생됩니다.
+- 음성: **VOICEVOX:冥鳴ひまり**(여성, 기본) · **VOICEVOX:玄野武宏**(남성, 장면 대화의 두 번째 화자). 두 캐릭터 모두 크레딧 표기를 조건으로 상업·비상업 이용이 가능하며, 앱 안(나 → 설정, 설계 설명)에 크레딧을 표시합니다. 자세한 조건은 [VOICEVOX 이용 규약](https://voicevox.hiroshiba.jp/term/)과 각 캐릭터 규약([冥鳴ひまり](https://www.meimeihimari.com/terms-of-use), [玄野武宏](https://voicevox.hiroshiba.jp/product/kurono_takehiro/))을 확인하세요.
+- 학습용으로 이렇게 만들었습니다.
+  - **글자 하나(あ 등)**: 모음을 약 0.4초로 늘리고 끝을 자연스럽게 줄여 "아—"처럼 또렷하게 들리도록 (합성기 기본값은 0.1~0.3초라 짧게 끊겨 들림)
+  - **단어**: 한자 표기로 합성해 사전의 억양을 따름. 한자로 읽기가 틀리면(예: 静か → しずかか) 가나로 바꿔 합성
+  - **읽기 자동 검사**: 합성기가 실제로 읽을 발음을 후리가나와 한 글자씩 비교 (조사 は·へ·を는 わ·え·お). 이 검사로 이전 음성의 오독 6건(はち→"와치", つかう→"쓰카아" 등)을 찾아 고쳤습니다.
+  - 앞뒤 무음을 잘라 내지 않아 소리 끝이 끊기지 않고, 여성·남성 음성의 크기를 맞춤
 - **나 → 설정 → 음성 방식**에서 "기기 음성"으로 바꾸면 휴대폰 내장 음성(iPhone의 Kyoko 등)을 씁니다. 이때 소리가 안 나면:
   - **Android**: 기종마다 메뉴 위치가 다르므로 설정 앱 검색창에 **"텍스트 음성 변환"** 을 검색 → 기본 엔진(Google 음성 서비스) → 음성 데이터 설치 → 일본어. Google 음성 서비스가 없으면 Play 스토어에서 "Google 음성 인식 및 합성"을 설치합니다.
   - **iPhone**: 설정 → 손쉬운 사용 → 읽기 및 말하기 → 음성 → 일본어.
-- 녹음 음성 출처: [Open JTalk](https://open-jtalk.sourceforge.net/)로 합성. 여성 HTS voice "Mei"(MMDAgent Project), 남성 HTS voice "NIT ATR503 M001"(HTS Working Group) — 모두 © Nagoya Institute of Technology, [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/).
-- 콘텐츠를 고친 뒤 음성을 다시 만들려면:
+- 콘텐츠를 고친 뒤 음성을 다시 만들려면 (Linux x86_64, 음성 모델이 든 VOICEVOX core 약 1GB를 받습니다):
   ```bash
-  pip install pyopenjtalk-prebuilt "numpy<2" lameenc
+  pip install pyopenjtalk-prebuilt "numpy<2" lameenc "pydantic>=1.9.2,<2"
+  pip install https://github.com/VOICEVOX/voicevox_core/releases/download/0.15.0/voicevox_core-0.15.0+cpu-cp38-abi3-linux_x86_64.whl
+  curl -LO https://github.com/microsoft/onnxruntime/releases/download/v1.13.1/onnxruntime-linux-x64-1.13.1.tgz && tar xzf onnxruntime-linux-x64-1.13.1.tgz
   node tools/audio-texts.js > /tmp/audio-texts.json
-  python3 tools/make-audio.py /tmp/audio-texts.json --male <nitech_jp_atr503_m001.htsvoice 경로>
+  python3 tools/make-audio.py /tmp/audio-texts.json --ort onnxruntime-linux-x64-1.13.1/lib/libonnxruntime.so.1.13.1 --cache /tmp/vv-cache
   ```
-  `make-audio.py`는 합성기가 후리가나와 다르게 읽는 문장을 찾아 알려 주며, 고친 읽기는 파일 안의 `OVERRIDES`에 적습니다.
+  `--check-only`로 읽기 검사만 할 수 있고, 합성기가 후리가나와 다르게 읽는 문장은 파일 안의 `OVERRIDES`에 고친 읽기를 적습니다. 묶음 파일 이름에 내용 해시가 붙어(`pack0-1a2b3c4d.mp3`) 다시 만들면 휴대폰도 새 음성을 받습니다.
 
 ## 학습 기록
 - 기록은 브라우저(localStorage)에 저장됩니다. 브라우저 데이터를 지우면 사라질 수 있으니 **나 → 학습 기록 백업**으로 가끔 내보내 두세요.
@@ -84,7 +90,7 @@ css/app.css             디자인 (라이트/다크 테마)
 js/data/kana.js         가나 221자 · 기억법 · 기원 한자
 js/data/ch1.js ~ ch6.js 챕터별 콘텐츠 (단어·문법·예문·대사·대화·인문학)
 js/data/audio-index.js  녹음 음성 색인 (자동 생성)
-audio/pack0~6.mp3       녹음 음성 묶음 (자동 생성)
+audio/pack0~6-*.mp3     녹음 음성 묶음 (자동 생성, 이름에 내용 해시)
 js/course.js            180일 코스 구성, 예문 마크업 파서, 로마자 변환
 js/core.js              저장소 · 음성 · 효과음 · SRS
 js/quiz.js              문제 생성기 (연습·평가·보스·청해 특훈·승급 시험)
@@ -95,7 +101,7 @@ tools/build.js          단일 파일 빌드 (dist/)
 tools/curriculum.js     docs/CURRICULUM.md 생성
 tools/make-icons.js     아이콘 PNG 생성
 tools/audio-texts.js    음성이 필요한 문장 목록 추출
-tools/make-audio.py     녹음 음성 합성 (Open JTalk)
+tools/make-audio.py     녹음 음성 합성 (VOICEVOX) · 읽기 검사
 ```
 
 ## 콘텐츠 수정하기
