@@ -166,11 +166,7 @@
       if (i >= lines.length || !run && !playDialog.free) { if (onLine) onLine(-1); return; }
       var l = lines[i], si = speakers.indexOf(l.who);
       if (onLine) onLine(i);
-      var voices = SP.voices, orig = SP.voice;
-      if (voices.length > 1 && si % 2 === 1) SP.voice = voices.filter(function (v) { return v !== orig; })[0] || orig;
-      SP.unlock();
-      var u = SP.speak(l.s.plain, { rate: rate || 1 });
-      SP.voice = orig;
+      var u = SP.speak(l.s.plain, { rate: rate || 1, voice: si % 2 ? 'm' : 'f' });
       i++;
       u.then(function () { setTimeout(next, 280); });
     }
@@ -224,9 +220,10 @@
   }
   function voiceBanner() {
     if (SP.hasJa() || !SP.checked) return '';
-    return '<details class="banner"><summary style="cursor:pointer"><b>일본어 음성을 찾지 못했어요.</b> 설치 방법 보기</summary><p class="small" style="margin:8px 0 0">' +
-      '· iPhone: 설정 → 손쉬운 사용 → 읽기 및 말하기 → 음성 → 일본어<br>· Android: 설정 → 텍스트 음성 변환(TTS) → 음성 데이터 설치 → 일본어<br>' +
-      '기기마다 메뉴 이름이 조금 다를 수 있어요. 음성이 없어도 학습은 가능하며, 듣기 문제는 글자로 대신 표시됩니다.</p></details>';
+    return '<details class="banner"><summary style="cursor:pointer"><b>일본어 음성을 찾지 못했어요.</b> 해결 방법 보기</summary><p class="small" style="margin:8px 0 0">' +
+      '이 앱은 녹음 음성을 기본으로 씁니다. 먼저 <b>나 → 설정 → 음성 방식</b>이 "녹음 음성"인지 확인하고, 인터넷 연결 상태에서 다시 열어 주세요.<br>' +
+      '"기기 음성"을 쓰려면 휴대폰에 일본어 음성이 있어야 합니다. 안드로이드는 기종마다 메뉴 위치가 달라서, <b>설정 앱의 검색창에 "텍스트 음성 변환"</b>을 검색해 기본 엔진(Google 음성 서비스)의 음성 데이터에서 일본어를 설치하는 방법이 가장 확실합니다. iPhone은 설정 → 손쉬운 사용 → 읽기 및 말하기 → 음성 → 일본어입니다.<br>' +
+      '카카오톡 등 앱 안의 브라우저에서는 기기 음성이 나오지 않을 수 있으니 Chrome이나 Safari에서 열어 주세요.</p></details>';
   }
 
   /* ================= 홈: 코스 ================= */
@@ -584,7 +581,8 @@
     var s = st().settings;
     var vopts = SP.voices.map(function (v) { return '<option value="' + esc(v.name) + '"' + (SP.voice && SP.voice.name === v.name ? ' selected' : '') + '>' + esc(v.name) + '</option>'; }).join('');
     return '<div class="sec-title"><h2>설정</h2><span class="jp">せってい</span></div><section class="card">' +
-      '<div class="set-row"><div><div class="l">일본어 음성</div><div class="d">' + (SP.hasJa() ? '기기에 설치된 일본어 음성 ' + SP.voices.length + '개' : '일본어 음성을 찾지 못했어요') + '</div></div>' + (vopts ? '<select id="voiceSel" data-input="voice">' + vopts + '</select>' : '') + '</div>' +
+      '<div class="set-row"><div><div class="l">음성 방식</div><div class="d">녹음 음성은 어떤 휴대폰·브라우저에서도 같은 소리로 나옵니다</div></div><div class="seg">' + [['clips', '녹음 음성'], ['device', '기기 음성']].map(function (o) { return '<button class="' + ((s.engine || 'clips') === o[0] ? 'on' : '') + '" data-act="setEngine" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join('') + '</div></div>' +
+      (s.engine === 'device' ? '<div class="set-row"><div><div class="l">기기 일본어 음성</div><div class="d">' + (SP.deviceHasJa() ? '설치된 일본어 음성 ' + SP.voices.length + '개' : '이 기기·브라우저에서 일본어 음성을 찾지 못했어요') + '</div></div>' + (vopts ? '<select id="voiceSel" data-input="voice">' + vopts + '</select>' : '') + '</div>' : '') +
       '<div class="set-row"><div><div class="l">말하기 속도</div><div class="d">기본 속도 <span class="tabnum" id="rateVal">' + s.rate.toFixed(2) + '</span>배</div></div><input id="rateRange" type="range" min="0.6" max="1.3" step="0.05" value="' + s.rate + '" data-input="rate"></div>' +
       '<div class="set-row"><div class="l">음성 테스트</div>' + audioBtn('アニメを字幕なしで楽しめるように、毎日少しずつ頑張りましょう。') + '</div>' +
       '<div class="set-row"><div><div class="l">로마자 표시</div><div class="d">자동: 1장(문자 단계)에서만 표시</div></div><div class="seg">' + [['auto', '자동'], ['always', '항상'], ['never', '숨김']].map(function (o) { return '<button class="' + (s.romaji === o[0] ? 'on' : '') + '" data-act="setRomaji" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join('') + '</div></div>' +
@@ -606,6 +604,7 @@
       '<p><b>한국어 화자 맞춤</b> · 어순·조사·한자음이 닮은 점을 적극 활용해 설명합니다(예: 約束 = 약속).</p>' +
       '<p><b>구어 집중</b> · 교과서 존댓말만으로는 애니가 들리지 않기 때문에 반말·문말 조사·축약(〜てる, 〜ちゃう)·역할어를 따로 다룹니다.</p>' +
       '<p><b>게임 요소</b> · 스탬프 카드, 연속 학습, 레벨, 랭크, 보스전, 배지. 자기결정성 이론이 말하는 "유능감"을 매일 확인할 수 있도록 설계했습니다. 틀려도 목숨이 깎이지 않고(보스전 제외), 몇 번이든 다시 도전할 수 있어요.</p>' +
+      '<p class="small muted">음성: Open JTalk로 합성한 녹음 음성. 여성 음성 HTS voice "Mei"(MMDAgent Project), 남성 음성 HTS voice "NIT ATR503 M001"(HTS Working Group) — 모두 © Nagoya Institute of Technology, CC BY 3.0 (creativecommons.org/licenses/by/3.0).</p>' +
       '<p class="small muted">현실적인 기대치: 6개월 코스를 마치면 일상·학원물의 쉬운 대사와 자주 나오는 표현은 상당 부분 알아들을 수 있지만, 모든 애니를 자막 없이 완전히 이해하려면 이후에도 꾸준한 시청과 어휘 확장이 필요합니다.</p>' +
       '</div></details>';
   }
@@ -645,6 +644,7 @@
   function startRun(day, mode) {
     closeOverlay();
     SP.unlock();
+    JP.clips.prefetch([0, C.chapterOf(day).n]);
     run = {
       day: day, D: JP.days[day], mode: mode || 'full', steps: buildSteps(day, mode), si: 0, i: 0,
       answers: [], xpLive: 0, queue: null, cur: null, answered: false, combo: 0,
@@ -1141,6 +1141,7 @@
     // 설정
     toggle: function (el) { var k = el.dataset.v; st().settings[k] = !st().settings[k]; save(); render(); },
     setRomaji: function (el) { st().settings.romaji = el.dataset.v; save(); render(); },
+    setEngine: function (el) { st().settings.engine = el.dataset.v; save(); render(); say('こんにちは'); },
     setTheme: function (el) { st().settings.theme = el.dataset.v; st().settings.themeSet = true; save(); render(); },
     export: function () { exportBackup(); },
     reset: function () {
@@ -1175,6 +1176,7 @@
   }
 
   document.addEventListener('click', function (e) {
+    SP.unlock();
     var el = e.target.closest('[data-act]');
     if (!el) return;
     var fn = H[el.dataset.act];
@@ -1215,6 +1217,7 @@
     S.onReplace(function () { SP.choose(); if (!run) render(); });
     render();
     S.initRemote();
+    JP.clips.prefetch([0, C.chapterOf(currentDay()).n]);
     // 음성 목록이 늦게 도착하는 브라우저 대응
     setTimeout(function () { if (!run && (ui.tab === 'me' || !st().onboarded || ui.tab === 'home')) render(); }, 1200);
     if (!window.JP_NO_SW && 'serviceWorker' in navigator && /^https?:$/.test(location.protocol) && window.top === window.self) {

@@ -256,6 +256,23 @@
     return out;
   }
 
+  // 화면 문구에서 재생하는 고정 문장 (녹음 음성 생성 대상)
+  JP.STATIC_AUDIO = [
+    'こんにちは。アニメの日本語を、いっしょに勉強しましょう。',
+    'アニメを字幕なしで楽しめるように、毎日少しずつ頑張りましょう。',
+    'こんにちは'
+  ];
+  // 녹음 음성 파일을 찾는 키: 화자(f=여성, m=남성) + 정규화된 문장
+  JP.audioKey = function (text, voice) {
+    return (voice || 'f') + '|' + String(text).replace(/[〜~]/g, '').trim();
+  };
+  // FNV-1a 32비트 (UTF-8 바이트) — tools/make-audio.py와 같은 방식
+  JP.audioHash = function (key) {
+    var bytes = unescape(encodeURIComponent(key)), h = 0x811c9dc5;
+    for (var i = 0; i < bytes.length; i++) { h ^= bytes.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+    return ('0000000' + h.toString(16)).slice(-8);
+  };
+
   JP.course = {
     dialogsInRange: dialogsInRange,
     build: build,

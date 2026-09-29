@@ -19,9 +19,13 @@ const iconData = 'data:image/svg+xml;base64,' + Buffer.from(iconSvg).toString('b
 
 const bodyInner =
   '<div id="app"><p style="padding:24px;font-family:sans-serif">불러오는 중…</p></div>\n<div id="overlay"></div>\n<div id="toast"></div>\n' +
-  '<script>\nwindow.JP_NO_SW = true; // 단일 파일 빌드에서는 서비스 워커를 쓰지 않음\n' + js + '\n</script>\n';
+  '<script>\nwindow.JP_NO_SW = true; // 단일 파일 빌드에서는 서비스 워커를 쓰지 않음\n' + '__AUDIO_BASE__' + js + '\n</script>\n';
 
 const title = 'アニ耳 일본어';
+// 독립 실행 파일은 녹음 음성을 배포 사이트에서 불러오고, 아티팩트는 함께 올린 audio/ 파일을 씀
+const AUDIO_SITE = process.env.AUDIO_SITE || 'https://2nhyeok.kr/';
+const bodyStandalone = bodyInner.replace('__AUDIO_BASE__', 'window.JP_AUDIO_BASE = ' + JSON.stringify(AUDIO_SITE) + ';\n');
+const bodyArtifact = bodyInner.replace('__AUDIO_BASE__', '');
 const standalone = `<!doctype html>
 <html lang="ko">
 <head>
@@ -36,7 +40,7 @@ ${css}
 </style>
 </head>
 <body>
-${bodyInner}</body>
+${bodyStandalone}</body>
 </html>
 `;
 const artifact = `<title>${title}</title>
@@ -44,7 +48,7 @@ const artifact = `<title>${title}</title>
 <style>
 ${css}
 </style>
-${bodyInner}`;
+${bodyArtifact}`;
 
 fs.mkdirSync(path.join(root, 'dist'), { recursive: true });
 fs.writeFileSync(path.join(root, 'dist/anime-nihongo.html'), standalone);

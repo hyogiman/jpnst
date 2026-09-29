@@ -37,7 +37,7 @@
   function fresh() {
     return {
       v: 1, createdAt: Date.now(), updatedAt: 0,
-      settings: { rate: 1, voice: '', romaji: 'auto', furigana: true, sfx: true, haptics: true, unlockAll: false },
+      settings: { rate: 1, voice: '', engine: 'clips', romaji: 'auto', furigana: true, sfx: true, haptics: true, unlockAll: false },
       prog: {}, xp: 0,
       streak: { n: 0, best: 0, last: null, freeze: 0 },
       act: {}, srs: {}, lis: [0, 0], hist: [], badges: {},
@@ -128,7 +128,89 @@
   };
   JP.store = Store;
 
-  /* ================= 음성 (Web Speech API) ================= */
+  /* ================= 음성 ① 녹음 클립 (기본) =================
+   * tools/make-audio.py가 만든 audio/pack*.mp3 묶음에서 필요한 구간만 잘라 재생.
+   * 기기 TTS가 없는 안드로이드 인앱 브라우저·웹뷰에서도 소리가 나도록 하기 위함.
+   */
+  var Clips = {
+    el: null, packs: {}, loaded: {}, urls: {}, seq: 0, unlocked: false,
+    base: g.JP_AUDIO_BASE || '',
+    index: function () { return JP.audioIndex || null; },
+    entry: function (key) { var I = Clips.index(); return I ? I.map[JP.audioHash(key)] : null; },
+    audio: function () {
+      if (!Clips.el) {
+        var a = Clips.el = new Audio();
+        a.preload = 'auto';
+        a.setAttribute('playsinline', '');
+        try { a.preservesPitch = true; a.mozPreservesPitch = true; a.webkitPreservesPitch = true; } catch (e) {}
+      }
+      return Clips.el;
+    },
+    // iOS·안드로이드는 사용자가 탭한 순간에 한 번 재생해 둔 오디오 요소만 나중에 자동 재생을 허용합니다.
+    unlock: function () {
+      var I = Clips.index();
+      if (Clips.unlocked || !I) return;
+      Clips.unlocked = true;
+      try { var a = Clips.audio(); a.src = I.silent; var p = a.play(); if (p && p.catch) p.catch(function () { Clips.unlocked = false; }); } catch (e) { Clips.unlocked = false; }
+    },
+    loadPack: function (p) {
+      var I = Clips.index();
+      if (!I) return Promise.reject(new Error('no index'));
+      if (!Clips.packs[p]) {
+        Clips.packs[p] = fetch(Clips.base + I.packs[p]).then(function (r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.arrayBuffer();
+        }).then(function (buf) { Clips.loaded[p] = buf; return buf; }, function (e) { delete Clips.packs[p]; throw e; });
+      }
+      return Clips.packs[p];
+    },
+    prefetch: function (list) { (list || []).forEach(function (p) { if (Clips.index() && Clips.index().packs[p]) Clips.loadPack(p).catch(function () {}); }); },
+    url: function (key) {
+      var e = Clips.entry(key), h = JP.audioHash(key);
+      if (!e) return Promise.reject(new Error('no clip'));
+      if (Clips.urls[h]) return Promise.resolve(Clips.urls[h]);
+      var make = function (buf) { return (Clips.urls[h] = URL.createObjectURL(new Blob([buf], { type: 'audio/mpeg' }))); };
+      var p = e[0], off = e[1], len = e[2];
+      if (Clips.loaded[p]) return Promise.resolve(make(Clips.loaded[p].slice(off, off + len)));
+      var full = Clips.loadPack(p).then(function (buf) { return buf.slice(off, off + len); });
+      // 묶음 전체를 받기 전에는 필요한 구간만 먼저 요청 (같은 출처에서만)
+      if (!Clips.base) {
+        var ranged = fetch(Clips.index().packs[p], { headers: { Range: 'bytes=' + off + '-' + (off + len - 1) } }).then(function (r) {
+          if (r.status !== 206) throw new Error('no range');
+          return r.arrayBuffer();
+        }).then(function (b) { if (b.byteLength !== len) throw new Error('bad range'); return b; });
+        return new Promise(function (resolve, reject) {
+          var fails = 0, fail = function (err) { if (++fails === 2) reject(err); };
+          ranged.then(function (b) { resolve(make(b)); }, fail);
+          full.then(function (b) { resolve(make(b)); }, fail);
+        });
+      }
+      return full.then(make);
+    },
+    play: function (key, rate) {
+      var my = ++Clips.seq;
+      return Clips.url(key).then(function (u) {
+        if (my !== Clips.seq) return true;
+        return new Promise(function (resolve) {
+          var a = Clips.audio(), done = false;
+          var finish = function (ok) { if (done) return; done = true; a.onended = a.onerror = null; resolve(ok); };
+          try { a.pause(); } catch (e) {}
+          a.src = u;
+          a.defaultPlaybackRate = rate; a.playbackRate = rate;
+          try { a.preservesPitch = true; a.webkitPreservesPitch = true; } catch (e) {}
+          a.onended = function () { finish(true); };
+          a.onerror = function () { finish(false); };
+          setTimeout(function () { finish(true); }, 15000);
+          var pr = a.play();
+          if (pr && pr.catch) pr.catch(function () { finish(false); });
+        });
+      }, function () { return false; });
+    },
+    stop: function () { Clips.seq++; if (Clips.el) try { Clips.el.pause(); } catch (e) {} }
+  };
+  JP.clips = Clips;
+
+  /* ================= 음성 ② 기기 음성 (Web Speech API, 대체용) ================= */
   var PREFERRED = [/Nanami|Keita|Aoi|Daichi|Mayu|Naoki|Shiori/i, /Google/i, /Kyoko|O-ren|Otoya|Hattori/i];
   var Speech = {
     supported: typeof g.speechSynthesis !== 'undefined' && typeof g.SpeechSynthesisUtterance !== 'undefined',
@@ -161,35 +243,56 @@
       }
       if (!Speech.voice) Speech.voice = vs[0];
     },
-    hasJa: function () { return Speech.supported && Speech.voices.length > 0; },
-    // iOS는 첫 발화가 사용자 탭 안에서 일어나야 이후 자동 재생이 됩니다.
+    useClips: function () { var s = JP.store.state; return !!Clips.index() && !(s && s.settings.engine === 'device'); },
+    deviceHasJa: function () { return Speech.supported && Speech.voices.length > 0; },
+    // 소리를 낼 수단이 있는가 (녹음 클립 또는 기기 일본어 음성)
+    hasJa: function () { return Speech.useClips() || Speech.deviceHasJa(); },
     unlock: function () {
-      if (!Speech.supported || Speech.unlocked) return;
-      try { var u = new SpeechSynthesisUtterance(' '); u.volume = 0; g.speechSynthesis.speak(u); Speech.unlocked = true; } catch (e) {}
+      Clips.unlock();
+      if (!Speech.supported || Speech.unlocked || Speech.useClips()) return;
+      try { var u = new SpeechSynthesisUtterance(''); u.volume = 0; g.speechSynthesis.speak(u); Speech.unlocked = true; } catch (e) {}
     },
     speak: function (text, opt) {
       opt = opt || {};
+      if (!text) return Promise.resolve(false);
+      var base = (JP.store.state && JP.store.state.settings.rate) || 1;
+      var rate = U.clamp(base * (opt.rate || 1), 0.5, 2);
+      if (Speech.useClips()) {
+        var key = JP.audioKey(text, opt.voice), key2 = JP.audioKey(text, 'f');
+        var k = Clips.entry(key) ? key : Clips.entry(key2) ? key2 : null;
+        if (k) return Clips.play(k, rate).then(function (ok) { return ok || Speech.device(text, opt, rate); });
+      }
+      return Speech.device(text, opt, rate);
+    },
+    device: function (text, opt, rate) {
       return new Promise(function (resolve) {
-        if (!Speech.supported || !text) return resolve(false);
+        if (!Speech.supported) return resolve(false);
         try {
           var syn = g.speechSynthesis;
-          syn.cancel();
-          var u = new SpeechSynthesisUtterance(String(text).replace(/[〜~]/g, ''));
-          u.lang = 'ja-JP';
-          if (Speech.voice) u.voice = Speech.voice;
-          var base = (JP.store.state && JP.store.state.settings.rate) || 1;
-          u.rate = U.clamp(base * (opt.rate || 1), 0.4, 1.8);
-          u.pitch = 1;
-          var done = false;
-          var finish = function () { if (!done) { done = true; resolve(true); } };
-          u.onend = finish; u.onerror = finish;
-          setTimeout(finish, 8000);
-          syn.speak(u);
-          if (syn.paused) syn.resume();
+          var go = function () {
+            var u = new SpeechSynthesisUtterance(String(text).replace(/[〜~]/g, ''));
+            u.lang = 'ja-JP';
+            var v = Speech.voice;
+            if (opt.voice === 'm' && Speech.voices.length > 1) v = Speech.voices.filter(function (x) { return x !== Speech.voice; })[0] || v;
+            if (v) u.voice = v;
+            u.rate = U.clamp(rate, 0.4, 1.8);
+            u.pitch = opt.voice === 'm' && Speech.voices.length < 2 ? 0.8 : 1;
+            var done = false;
+            var finish = function () { if (!done) { done = true; resolve(true); } };
+            u.onend = finish; u.onerror = finish;
+            setTimeout(finish, 10000);
+            syn.speak(u);
+            if (syn.paused) syn.resume();
+          };
+          // 크롬(특히 안드로이드)은 cancel() 직후 바로 speak()하면 소리가 사라지는 문제가 있어 잠깐 기다림
+          if (syn.speaking || syn.pending) { syn.cancel(); setTimeout(go, 120); } else go();
         } catch (e) { resolve(false); }
       });
     },
-    stop: function () { try { if (Speech.supported) g.speechSynthesis.cancel(); } catch (e) {} }
+    stop: function () {
+      Clips.stop();
+      try { if (Speech.supported && (g.speechSynthesis.speaking || g.speechSynthesis.pending)) g.speechSynthesis.cancel(); } catch (e) {}
+    }
   };
   JP.speech = Speech;
 
