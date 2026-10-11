@@ -26,6 +26,7 @@
 
 ### 방법 0. Android 앱으로 설치 (추천)
 **내려받기: https://github.com/hyogiman/jpnst/releases/latest/download/animimi.apk** (항상 최신 버전)
+설치 안내 페이지: **https://2nhyeok.kr/apk** (휴대폰 Chrome 앱 주소창에 `2nhyeok.kr/apk` 입력 — 문제 해결 방법 포함)
 
 1. 휴대폰 Chrome으로 위 주소를 열면 `animimi.apk`가 내려받아집니다. (웹 앱의 **나 → 휴대폰 앱으로 설치** 버튼도 같은 주소)
 2. 내려받은 파일을 엽니다. 처음 한 번은 **"출처를 알 수 없는 앱 설치"** 를 허용해야 합니다. (Chrome 또는 내 파일 앱 → 허용 → 뒤로)
@@ -36,6 +37,8 @@
 - 웹(2nhyeok.kr)에서 하던 기록 옮기기: 웹의 **나 → 백업 내보내기** → 앱의 **나 → 백업 불러오기**에서 그 파일 선택
 - 앱에서는 휴대폰 뒤로 가기 버튼으로 창 닫기 → 레슨 그만하기 확인 → 홈 → 앱 종료 순서로 동작하고, 백업은 공유 창(드라이브·카카오톡 등)으로 보냅니다.
 - Play 스토어 밖에서 받은 앱이라 설치할 때 Play 프로텍트가 앱을 검사하겠냐고 물을 수 있습니다. 검사 후 설치하면 됩니다.
+- **다운로드가 100%에서 멈추면**: 카카오톡·Claude 같은 다른 앱 안의 브라우저(맞춤 탭)에서는 "그래도 다운로드할까요?" 확인 창이 가려져 멈출 수 있습니다. 알림창이나 내 파일 → 다운로드에 파일이 있는지 보고, 없으면 Chrome 앱에서 다시 받으세요.
+- 삼성 갤럭시에서 "자동 차단 기능에 의해 차단됨"이 뜨면 설정 → 보안 및 개인정보 보호 → 자동 차단 기능을 잠시 끄고 설치합니다.
 - **iPhone**은 앱 파일 설치가 불가능하므로 아래 방법 1(Safari → 홈 화면에 추가)을 쓰세요.
 
 **APK가 만들어지는 방식**: `main`에 앱 파일이 바뀌어 올라오면 GitHub Actions(`.github/workflows/android.yml`)가 [Capacitor](https://capacitorjs.com/)로 Android 앱을 빌드해 GitHub Releases에 올립니다. 버전 번호(versionCode)는 빌드마다 커지므로 항상 덮어 설치할 수 있습니다.
@@ -130,6 +133,7 @@ tools/make-audio.py     녹음 음성 합성 (VOICEVOX) · 읽기 검사
 tools/build-app.js      Android 앱용 웹 파일(www/) 만들기 — 글꼴을 앱에 넣고 서비스 워커 끔
 tools/make-android-icons.js  Android 앱 아이콘 생성
 app/native.js           앱 전용 연동 (뒤로 가기 버튼, 백업 공유, 상태 표시줄)
+apk/index.html          2nhyeok.kr/apk — Android 앱 설치 안내·문제 해결 페이지
 capacitor.config.json   Android 앱 설정 (앱 이름·ID)
 android/                Android 프로젝트 (Capacitor)
 .github/workflows/android.yml  APK 자동 빌드 → GitHub Releases
