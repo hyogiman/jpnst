@@ -40,7 +40,7 @@
       settings: { rate: 1, voice: '', engine: 'clips', romaji: 'auto', furigana: true, sfx: true, haptics: true, unlockAll: false },
       prog: {}, xp: 0,
       streak: { n: 0, best: 0, last: null, freeze: 0 },
-      act: {}, srs: {}, lis: [0, 0], hist: [], badges: {},
+      act: {}, srs: {}, lis: '', hist: [], badges: {},  // lis: 최근 청해 문항 정오 기록 ('1'=정답, '0'=오답, 최대 50개)
       cnt: { ans: 0, ok: 0, hanamaru: 0, boss: 0, reviews: 0, combo: 0, comboBest: 0, lessonsToday: 0, lessonsDate: '' }
     };
   }
@@ -50,6 +50,9 @@
     Object.keys(f).forEach(function (k) { if (s[k] === undefined) s[k] = f[k]; });
     Object.keys(f.settings).forEach(function (k) { if (s.settings[k] === undefined) s.settings[k] = f.settings[k]; });
     Object.keys(f.cnt).forEach(function (k) { if (s.cnt[k] === undefined) s.cnt[k] = f.cnt[k]; });
+    // 예전 버전은 lis를 배열 [0, 0]로 시작해 '나' 탭이 멈추거나, 문자열에 "0,0"이 섞였음 → 정리
+    if (Array.isArray(s.lis)) s.lis = '';
+    s.lis = String(s.lis || '').replace(/^0,0/, '').replace(/[^01]/g, '');
     return s;
   }
 

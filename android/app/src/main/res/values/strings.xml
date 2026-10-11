@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">アニ耳 일본어</string>
+    <string name="title_activity_main">アニ耳 일본어</string>
+    <string name="package_name">kr.nhyeok.animimi</string>
+    <string name="custom_url_scheme">kr.nhyeok.animimi</string>
+</resources>

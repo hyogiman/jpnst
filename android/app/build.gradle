@@ -1,0 +1,69 @@
+apply plugin: 'com.android.application'
+
+// 버전·서명은 환경 변수로 바꿀 수 있음 (GitHub Actions: .github/workflows/android.yml)
+//  - ANIMIMI_VERSION_CODE / ANIMIMI_VERSION_NAME : 새 APK마다 versionCode가 커져야 덮어 설치(업데이트)됨
+//  - ANIMIMI_KEYSTORE(_PASSWORD) / ANIMIMI_KEY_ALIAS / ANIMIMI_KEY_PASSWORD : 지정하지 않으면 저장소의 개인 배포용 키 사용
+def env = System.getenv()
+def keystorePath = env.ANIMIMI_KEYSTORE ? file(env.ANIMIMI_KEYSTORE) : rootProject.file('keystore/animimi-sideload.jks')
+
+android {
+    namespace = "kr.nhyeok.animimi"
+    compileSdk = rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId "kr.nhyeok.animimi"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode Integer.parseInt(env.ANIMIMI_VERSION_CODE ?: '1')
+        versionName env.ANIMIMI_VERSION_NAME ?: '1.0.0'
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    signingConfigs {
+        release {
+            storeFile keystorePath
+            storePassword env.ANIMIMI_KEYSTORE_PASSWORD ?: 'animimi-sideload'
+            keyAlias env.ANIMIMI_KEY_ALIAS ?: 'animimi'
+            keyPassword env.ANIMIMI_KEY_PASSWORD ?: 'animimi-sideload'
+        }
+    }
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'
+
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}

@@ -2,3 +2,4 @@ node_modules/
 dist/artifact.html
 .DS_Store
 __pycache__/
+www/

@@ -517,6 +517,7 @@
       var on = !!s.badges[b.id];
       return '<div class="badge ' + (on ? '' : 'off') + '">' + medal(b.g, on) + '<b>' + esc(b.n) + '</b><span>' + esc(b.d) + '</span></div>';
     }).join('') + '</div>';
+    html += installHtml();
     html += settingsHtml();
     html += designHtml();
     return html;
@@ -581,8 +582,8 @@
     var s = st().settings;
     var vopts = SP.voices.map(function (v) { return '<option value="' + esc(v.name) + '"' + (SP.voice && SP.voice.name === v.name ? ' selected' : '') + '>' + esc(v.name) + '</option>'; }).join('');
     return '<div class="sec-title"><h2>설정</h2><span class="jp">せってい</span></div><section class="card">' +
-      '<div class="set-row"><div><div class="l">음성 방식</div><div class="d">녹음 음성(VOICEVOX:冥鳴ひまり·玄野武宏)은 어떤 휴대폰·브라우저에서도 같은 소리로 나옵니다</div></div><div class="seg">' + [['clips', '녹음 음성'], ['device', '기기 음성']].map(function (o) { return '<button class="' + ((s.engine || 'clips') === o[0] ? 'on' : '') + '" data-act="setEngine" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join('') + '</div></div>' +
-      (s.engine === 'device' ? '<div class="set-row"><div><div class="l">기기 일본어 음성</div><div class="d">' + (SP.deviceHasJa() ? '설치된 일본어 음성 ' + SP.voices.length + '개' : '이 기기·브라우저에서 일본어 음성을 찾지 못했어요') + '</div></div>' + (vopts ? '<select id="voiceSel" data-input="voice">' + vopts + '</select>' : '') + '</div>' : '') +
+      (window.JP_APP ? '' : '<div class="set-row"><div><div class="l">음성 방식</div><div class="d">녹음 음성(VOICEVOX:冥鳴ひまり·玄野武宏)은 어떤 휴대폰·브라우저에서도 같은 소리로 나옵니다</div></div><div class="seg">' + [['clips', '녹음 음성'], ['device', '기기 음성']].map(function (o) { return '<button class="' + ((s.engine || 'clips') === o[0] ? 'on' : '') + '" data-act="setEngine" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join('') + '</div></div>' +
+      (s.engine === 'device' ? '<div class="set-row"><div><div class="l">기기 일본어 음성</div><div class="d">' + (SP.deviceHasJa() ? '설치된 일본어 음성 ' + SP.voices.length + '개' : '이 기기·브라우저에서 일본어 음성을 찾지 못했어요') + '</div></div>' + (vopts ? '<select id="voiceSel" data-input="voice">' + vopts + '</select>' : '') + '</div>' : '')) +
       '<div class="set-row"><div><div class="l">말하기 속도</div><div class="d">기본 속도 <span class="tabnum" id="rateVal">' + s.rate.toFixed(2) + '</span>배</div></div><input id="rateRange" type="range" min="0.6" max="1.3" step="0.05" value="' + s.rate + '" data-input="rate"></div>' +
       '<div class="set-row"><div class="l">음성 테스트</div>' + audioBtn('アニメを字幕なしで楽しめるように、毎日少しずつ頑張りましょう。') + '</div>' +
       '<div class="set-row"><div><div class="l">로마자 표시</div><div class="d">자동: 1장(문자 단계)에서만 표시</div></div><div class="seg">' + [['auto', '자동'], ['always', '항상'], ['never', '숨김']].map(function (o) { return '<button class="' + (s.romaji === o[0] ? 'on' : '') + '" data-act="setRomaji" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join('') + '</div></div>' +
@@ -592,9 +593,20 @@
       '<div class="set-row"><div><div class="l">화면 테마</div></div><div class="seg">' + [['system', '시스템'], ['light', '밝게'], ['dark', '어둡게']].map(function (o) { return '<button class="' + ((s.theme || 'system') === o[0] ? 'on' : '') + '" data-act="setTheme" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join('') + '</div></div>' +
       '<div class="set-row"><div><div class="l">체험 모드</div><div class="d">모든 화의 잠금을 풀어 미리 봅니다 (교육 담당자·검토용)</div></div><button class="switch ' + (s.unlockAll ? 'on' : '') + '" data-act="toggle" data-v="unlockAll" role="switch" aria-checked="' + s.unlockAll + '" aria-label="체험 모드"></button></div>' +
       '</section>' +
-      '<section class="card stack"><div class="sec-title"><h2 style="font-size:15px">학습 기록 백업</h2></div><p class="small muted" style="margin:0">학습 기록은 이 기기의 브라우저에 저장됩니다. 브라우저 데이터를 지우면 사라질 수 있으니 가끔 백업 파일로 내보내 두세요.</p>' +
+      '<section class="card stack"><div class="sec-title"><h2 style="font-size:15px">학습 기록 백업</h2></div><p class="small muted" style="margin:0">' + (window.JP_APP ? '학습 기록은 이 앱 안에 저장됩니다. 앱을 지우면 함께 사라지니 가끔 백업 파일로 내보내 두세요 (드라이브·카카오톡 "나와의 채팅" 등으로 보내 두면 편해요).' : '학습 기록은 이 기기의 브라우저에 저장됩니다. 브라우저 데이터를 지우면 사라질 수 있으니 가끔 백업 파일로 내보내 두세요.') + '</p>' +
       '<div class="row"><button class="btn sm ghost" data-act="export">백업 내보내기</button><label class="btn sm ghost" for="importFile">백업 불러오기</label><input id="importFile" type="file" accept="application/json,.json" class="sr" data-input="import"></div>' +
       '<div class="danger-zone"><div class="row" style="justify-content:space-between"><div><div class="l">처음부터 다시 시작</div><div class="small muted">모든 진도·복습·배지가 지워집니다.</div></div><button class="btn sm bad" data-act="reset">' + (ui.resetArm ? '한 번 더 누르면 삭제' : '초기화') + '</button></div></div></section>';
+  }
+  // 휴대폰 앱 설치 안내 (웹에서만. 설치형 앱·claude.ai 미리보기 안에서는 숨김)
+  var APK_URL = 'https://github.com/hyogiman/jpnst/releases/latest/download/animimi.apk';
+  function installHtml() {
+    if (window.JP_APP || window.top !== window.self) return '';
+    return '<section class="card stack"><div class="sec-title"><h2 style="font-size:15px">휴대폰 앱으로 설치</h2><span class="jp">アプリ</span></div>' +
+      '<p class="small" style="margin:0"><b>Android</b> · 앱 파일(APK)을 내려받아 설치하면 인터넷 없이도 모든 글자·음성으로 학습할 수 있어요.</p>' +
+      '<a class="btn block" href="' + APK_URL + '" rel="noopener">Android 앱 내려받기 (APK)</a>' +
+      '<ol class="small muted" style="margin:0;padding-left:18px;line-height:1.7"><li>내려받은 <b>animimi.apk</b>를 눌러 엽니다.</li><li>처음 한 번 "출처를 알 수 없는 앱" 설치를 허용합니다 (Chrome 또는 내 파일 앱).</li><li>설치 → 열기. 새 버전도 같은 방법으로 덮어 설치하면 기록이 유지됩니다.</li></ol>' +
+      '<p class="small muted" style="margin:0">이 브라우저의 학습 기록은 앱으로 자동으로 옮겨지지 않아요. 먼저 아래 <b>백업 내보내기</b>를 한 뒤, 앱의 나 → <b>백업 불러오기</b>로 옮기세요.</p>' +
+      '<p class="small muted" style="margin:0"><b>iPhone</b> · Safari로 이 페이지를 열고 공유 버튼 → <b>홈 화면에 추가</b>. 한 번 연 뒤에는 오프라인에서도 동작합니다.</p></section>';
   }
   function designHtml() {
     return '<details class="card"><summary style="cursor:pointer;font-weight:700">이 앱은 이렇게 설계되었어요</summary><div class="gram-d" style="margin-top:10px">' +
@@ -1165,6 +1177,10 @@
   }
   function exportBackup() {
     var data = S.exportJSON(), name = 'anime-nihongo-backup-' + U.todayStr() + '.json';
+    if (JP.nativeSave) {
+      JP.nativeSave(name, data).then(function () { toast('백업 파일을 보냈어요.'); }, function (e) { toast('백업하지 못했어요: ' + ((e && e.message) || e)); });
+      return;
+    }
     var p = window.claude && window.claude.use ? window.claude.use('downloads') : Promise.resolve(null);
     p.then(function (dl) {
       if (dl) return dl.save({ filename: name, data: data }).then(function () { toast('백업 파일을 저장했어요.'); }, function (e) { if (e && e.code !== 'declined') toast('저장하지 못했어요: ' + (e.message || e.code)); });
@@ -1225,5 +1241,14 @@
     }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
-  JP.app = { render: render, startRun: startRun, state: function () { return run; } };
+  function back() {
+    var q = document.getElementById('quitBox');
+    if (q) { q.remove(); return true; }
+    // 레슨 화면도 #overlay에 그려지므로 레슨 여부를 먼저 확인
+    if (run) { if (stepNow().k === 'result') endRun(); else showQuit(); return true; }
+    if (document.getElementById('overlay').innerHTML) { closeOverlay(); return true; }
+    if (ui.tab !== 'home') { ui.tab = 'home'; render(); window.scrollTo(0, 0); return true; }
+    return false;
+  }
+  JP.app = { render: render, startRun: startRun, state: function () { return run; }, back: back };
 })();

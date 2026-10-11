@@ -24,6 +24,31 @@
 
 ## 휴대폰에서 실행하기
 
+### 방법 0. Android 앱으로 설치 (추천)
+**내려받기: https://github.com/hyogiman/jpnst/releases/latest/download/animimi.apk** (항상 최신 버전)
+
+1. 휴대폰 Chrome으로 위 주소를 열면 `animimi.apk`가 내려받아집니다. (웹 앱의 **나 → 휴대폰 앱으로 설치** 버튼도 같은 주소)
+2. 내려받은 파일을 엽니다. 처음 한 번은 **"출처를 알 수 없는 앱 설치"** 를 허용해야 합니다. (Chrome 또는 내 파일 앱 → 허용 → 뒤로)
+3. **설치 → 열기**. 홈 화면에 `アニ耳 일본어` 아이콘이 생깁니다.
+
+- 앱 안에 모든 화면·음성(약 16MB)·글꼴이 들어 있어 **인터넷 없이도** 학습할 수 있습니다. 설치 파일은 약 25MB입니다.
+- 새 버전이 나오면 같은 주소에서 받아 **덮어 설치**하면 학습 기록이 그대로 유지됩니다. (앱을 삭제하면 기록도 지워지니 나 → 백업 내보내기를 가끔 해 두세요)
+- 웹(2nhyeok.kr)에서 하던 기록 옮기기: 웹의 **나 → 백업 내보내기** → 앱의 **나 → 백업 불러오기**에서 그 파일 선택
+- 앱에서는 휴대폰 뒤로 가기 버튼으로 창 닫기 → 레슨 그만하기 확인 → 홈 → 앱 종료 순서로 동작하고, 백업은 공유 창(드라이브·카카오톡 등)으로 보냅니다.
+- Play 스토어 밖에서 받은 앱이라 설치할 때 Play 프로텍트가 앱을 검사하겠냐고 물을 수 있습니다. 검사 후 설치하면 됩니다.
+- **iPhone**은 앱 파일 설치가 불가능하므로 아래 방법 1(Safari → 홈 화면에 추가)을 쓰세요.
+
+**APK가 만들어지는 방식**: `main`에 앱 파일이 바뀌어 올라오면 GitHub Actions(`.github/workflows/android.yml`)가 [Capacitor](https://capacitorjs.com/)로 Android 앱을 빌드해 GitHub Releases에 올립니다. 버전 번호(versionCode)는 빌드마다 커지므로 항상 덮어 설치할 수 있습니다.
+
+> **서명 키에 관한 주의**: 업데이트가 덮어 설치되려면 모든 APK가 같은 키로 서명되어야 합니다. 저장소 Secrets를 설정하지 않아도 바로 쓸 수 있도록 개인 배포용 키(`android/keystore/animimi-sideload.jks`, 비밀번호 `animimi-sideload`)를 저장소에 넣어 두었습니다. 공개 저장소이므로 누구나 같은 키로 서명한 APK를 만들 수 있다는 뜻이니, **APK는 반드시 위 Releases 주소에서만 받으세요.** 키를 비공개로 바꾸려면 새 키를 만들어 Settings → Secrets and variables → Actions에 `ANIMIMI_KEYSTORE_B64`(키 파일을 base64로 인코딩한 값), `ANIMIMI_KEYSTORE_PASSWORD`, `ANIMIMI_KEY_ALIAS`, `ANIMIMI_KEY_PASSWORD`를 넣으면 됩니다. 단, 키가 바뀌면 이미 설치한 앱은 한 번 삭제 후 다시 설치해야 합니다(그 전에 백업 내보내기).
+
+직접 빌드하려면 (Android SDK·JDK 21 필요):
+```bash
+npm ci
+npm run app            # www/ 생성 + android 프로젝트에 복사
+cd android && ./gradlew assembleRelease   # → app/build/outputs/apk/release/app-release.apk
+```
+
 ### 방법 1. GitHub Pages + 도메인 `2nhyeok.kr` (현재 설정)
 앱은 `main` 브랜치 루트에 있고, `CNAME` 파일에 `2nhyeok.kr`이 지정되어 있습니다.
 1. 저장소 **Settings → Pages** 에서 Source를 `Deploy from a branch`, 브랜치 `main`, 폴더 `/ (root)`로 저장합니다.
@@ -102,6 +127,12 @@ tools/curriculum.js     docs/CURRICULUM.md 생성
 tools/make-icons.js     아이콘 PNG 생성
 tools/audio-texts.js    음성이 필요한 문장 목록 추출
 tools/make-audio.py     녹음 음성 합성 (VOICEVOX) · 읽기 검사
+tools/build-app.js      Android 앱용 웹 파일(www/) 만들기 — 글꼴을 앱에 넣고 서비스 워커 끔
+tools/make-android-icons.js  Android 앱 아이콘 생성
+app/native.js           앱 전용 연동 (뒤로 가기 버튼, 백업 공유, 상태 표시줄)
+capacitor.config.json   Android 앱 설정 (앱 이름·ID)
+android/                Android 프로젝트 (Capacitor)
+.github/workflows/android.yml  APK 자동 빌드 → GitHub Releases
 ```
 
 ## 콘텐츠 수정하기

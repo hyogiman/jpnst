@@ -1,0 +1,120 @@
+# Android 앱(APK) 자동 빌드
+#  - main에 앱 파일이 바뀌어 올라오면 APK를 만들어 GitHub Releases에 올림
+#    → 휴대폰 내려받기 주소(항상 최신): https://github.com/hyogiman/jpnst/releases/latest/download/animimi.apk
+#  - 다른 브랜치에서는 빌드만 확인 (실행 결과의 Artifacts에서 APK를 받을 수 있음)
+#  - 서명: 저장소 Secrets에 ANIMIMI_KEYSTORE_B64 등이 있으면 그 키를, 없으면 android/keystore의 개인 배포용 키를 씀
+name: Android 앱 (APK)
+
+on:
+  push:
+    branches: [main, 'claude/**']
+    paths:
+      - 'index.html'
+      - 'manifest.webmanifest'
+      - 'css/**'
+      - 'js/**'
+      - 'audio/**'
+      - 'icons/**'
+      - 'app/**'
+      - 'android/**'
+      - 'capacitor.config.json'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tools/build-app.js'
+      - '.github/workflows/android.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: 패키지 설치
+        run: npm ci
+
+      - name: 콘텐츠 검사
+        run: node tools/validate.js
+
+      - name: 앱 웹 파일 만들기 (www → Android)
+        run: |
+          node tools/build-app.js
+          npx cap sync android
+
+      - name: 서명 키 준비 (Secrets에 있을 때만)
+        env:
+          KS_B64: ${{ secrets.ANIMIMI_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            echo "ANIMIMI_KEYSTORE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+            echo "Secrets의 서명 키를 사용합니다."
+          else
+            echo "저장소의 개인 배포용 키(android/keystore)를 사용합니다."
+          fi
+
+      - name: APK 빌드
+        working-directory: android
+        env:
+          ANIMIMI_VERSION_CODE: ${{ github.run_number }}
+          ANIMIMI_VERSION_NAME: 1.0.${{ github.run_number }}
+          ANIMIMI_KEYSTORE_PASSWORD: ${{ secrets.ANIMIMI_KEYSTORE_PASSWORD }}
+          ANIMIMI_KEY_ALIAS: ${{ secrets.ANIMIMI_KEY_ALIAS }}
+          ANIMIMI_KEY_PASSWORD: ${{ secrets.ANIMIMI_KEY_PASSWORD }}
+        run: ./gradlew --no-daemon assembleRelease
+
+      - name: 서명·내용 확인
+        run: |
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          BT="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
+          "$BT/apksigner" verify --print-certs "$APK"
+          "$BT/aapt2" dump badging "$APK" | grep -E "^package:|application-label:|targetSdkVersion"
+          unzip -l "$APK" | grep -E "assets/public/(index.html|audio/pack0|fonts/fonts.css|js/native.js)"
+          cp "$APK" animimi.apk
+          ls -l animimi.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: animimi-apk
+          path: animimi.apk
+
+      - name: 릴리스에 올리기 (휴대폰 내려받기 링크)
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: 1.0.${{ github.run_number }}
+        run: |
+          cat > notes.md <<'EOF'
+          ## 휴대폰에 설치하기 (Android)
+          1. 아래 **animimi.apk**를 휴대폰에서 눌러 내려받습니다.
+          2. 내려받은 파일을 엽니다. 처음 한 번은 "출처를 알 수 없는 앱 설치"를 허용해야 합니다 (Chrome 또는 내 파일 앱).
+          3. **설치 → 열기**. 새 버전은 같은 방법으로 덮어 설치하면 학습 기록이 그대로 유지됩니다.
+
+          - 인터넷 없이도 모든 글자·단어·예문·대사 음성(VOICEVOX:冥鳴ひまり·玄野武宏)이 재생됩니다.
+          - 웹(2nhyeok.kr)에서 하던 기록은 웹의 나 → 백업 내보내기 → 앱의 나 → 백업 불러오기로 옮길 수 있습니다.
+          - iPhone은 Safari로 https://2nhyeok.kr 을 열고 공유 → 홈 화면에 추가를 이용하세요.
+          EOF
+          gh release create "app-v$VERSION" animimi.apk \
+            --target "$GITHUB_SHA" \
+            --title "アニ耳 Android 앱 $VERSION" \
+            --notes-file notes.md \
+            --latest

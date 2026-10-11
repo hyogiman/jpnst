@@ -8,7 +8,23 @@
     "curriculum": "node tools/curriculum.js > docs/CURRICULUM.md",
     "build": "node tools/build.js",
     "serve": "npx http-server -p 8080 .",
-    "smoke": "node tools/smoke.js"
+    "smoke": "node tools/smoke.js",
+    "app": "node tools/build-app.js && npx cap sync android",
+    "icons:android": "node tools/make-android-icons.js"
   },
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/filesystem": "^8.1.4",
+    "@capacitor/share": "^8.0.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.3",
+    "@fontsource/black-han-sans": "^5.3.0",
+    "@fontsource/dela-gothic-one": "^5.3.0",
+    "@fontsource/ibm-plex-sans-kr": "^5.3.0",
+    "@fontsource/klee-one": "^5.3.1"
+  }
 }

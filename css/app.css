@@ -140,7 +140,9 @@ main.view { flex: 1; padding: 16px 16px 110px; display: flex; flex-direction: co
 .btn.shu { background: var(--shu); color: #fff; box-shadow: 0 3px 0 color-mix(in srgb, var(--shu) 70%, #000); }
 .btn.ok { background: var(--ok); color: #fff; box-shadow: 0 3px 0 color-mix(in srgb, var(--ok) 70%, #000); }
 .btn.bad { background: var(--bad); color: #fff; box-shadow: 0 3px 0 color-mix(in srgb, var(--bad) 70%, #000); }
+.btn svg { width: 20px; height: 20px; flex: none; }
 .btn.sm { padding: 8px 12px; font-size: 14px; border-radius: 10px; }
+.btn.sm svg { width: 16px; height: 16px; }
 .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .row.end { justify-content: flex-end; }
 .stack { display: flex; flex-direction: column; gap: 12px; }

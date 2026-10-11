@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 시작 화면 (Android 11 이하): 배경색 + 가운데 앱 아이콘. Android 12 이상은 시스템 시작 화면이 같은 배경색·아이콘을 씀 -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/splash_background" />
+    <item android:width="112dp" android:height="112dp" android:gravity="center" android:drawable="@mipmap/ic_launcher" />
+</layer-list>

@@ -1,0 +1,17 @@
+{
+  "appId": "kr.nhyeok.animimi",
+  "appName": "アニ耳 일본어",
+  "webDir": "www",
+  "backgroundColor": "#F3F5FA",
+  "android": {
+    "allowMixedContent": false,
+    "captureInput": false,
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "css",
+      "style": "DEFAULT"
+    }
+  }
+}
