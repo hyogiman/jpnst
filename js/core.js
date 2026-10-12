@@ -37,7 +37,7 @@
   function fresh() {
     return {
       v: 1, createdAt: Date.now(), updatedAt: 0,
-      settings: { rate: 1, voice: '', engine: 'clips', romaji: 'auto', furigana: true, sfx: true, haptics: true, unlockAll: false },
+      settings: { rate: 1, voice: '', engine: 'clips', romaji: 'auto', furigana: true, sfx: true, haptics: true, unlockAll: false, qHints: false },
       prog: {}, xp: 0,
       streak: { n: 0, best: 0, last: null, freeze: 0 },
       act: {}, srs: {}, lis: '', hist: [], badges: {},  // lis: 최근 청해 문항 정오 기록 ('1'=정답, '0'=오답, 최대 50개)

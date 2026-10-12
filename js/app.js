@@ -244,7 +244,7 @@
     var due = SRS.due().length;
     var todayN = s.cnt.lessonsDate === U.todayStr() ? s.cnt.lessonsToday : 0;
     var allDone = passedCount() >= JP.totalDays;
-    var html = voiceBanner();
+    var html = voiceBanner() + updateBanner();
     html += '<section class="today" aria-label="오늘의 에피소드">' +
       '<div class="row" style="justify-content:space-between"><span class="ep-no">第' + cur + '話 · ' + esc(ch.jp) + '</span>' +
       '<span class="type-badge ' + D.type + '">' + TYPE_ICON[D.type] + TYPE_LABEL[D.type] + '</span></div>' +
@@ -587,15 +587,30 @@
       '<div class="set-row"><div><div class="l">말하기 속도</div><div class="d">기본 속도 <span class="tabnum" id="rateVal">' + s.rate.toFixed(2) + '</span>배</div></div><input id="rateRange" type="range" min="0.6" max="1.3" step="0.05" value="' + s.rate + '" data-input="rate"></div>' +
       '<div class="set-row"><div class="l">음성 테스트</div>' + audioBtn('アニメを字幕なしで楽しめるように、毎日少しずつ頑張りましょう。') + '</div>' +
       '<div class="set-row"><div><div class="l">로마자 표시</div><div class="d">자동: 1장(문자 단계)에서만 표시</div></div><div class="seg">' + [['auto', '자동'], ['always', '항상'], ['never', '숨김']].map(function (o) { return '<button class="' + (s.romaji === o[0] ? 'on' : '') + '" data-act="setRomaji" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join('') + '</div></div>' +
+      '<div class="set-row"><div><div class="l">문제에 한자·로마자 힌트</div><div class="d">끄면(기본) 문제에서는 가나만 보이고, 답을 고른 뒤에 한자·로마자를 보여 줍니다</div></div><button class="switch ' + (s.qHints ? 'on' : '') + '" data-act="toggle" data-v="qHints" role="switch" aria-checked="' + !!s.qHints + '" aria-label="문제에 한자·로마자 힌트"></button></div>' +
       '<div class="set-row"><div><div class="l">후리가나</div><div class="d">한자 위에 읽는 법 표시</div></div><button class="switch ' + (s.furigana ? 'on' : '') + '" data-act="toggle" data-v="furigana" role="switch" aria-checked="' + s.furigana + '" aria-label="후리가나"></button></div>' +
       '<div class="set-row"><div class="l">효과음</div><button class="switch ' + (s.sfx ? 'on' : '') + '" data-act="toggle" data-v="sfx" role="switch" aria-checked="' + s.sfx + '" aria-label="효과음"></button></div>' +
       '<div class="set-row"><div class="l">진동 (오답 시)</div><button class="switch ' + (s.haptics ? 'on' : '') + '" data-act="toggle" data-v="haptics" role="switch" aria-checked="' + s.haptics + '" aria-label="진동"></button></div>' +
       '<div class="set-row"><div><div class="l">화면 테마</div></div><div class="seg">' + [['system', '시스템'], ['light', '밝게'], ['dark', '어둡게']].map(function (o) { return '<button class="' + ((s.theme || 'system') === o[0] ? 'on' : '') + '" data-act="setTheme" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join('') + '</div></div>' +
+      appInfoHtml() +
       '<div class="set-row"><div><div class="l">체험 모드</div><div class="d">모든 화의 잠금을 풀어 미리 봅니다 (교육 담당자·검토용)</div></div><button class="switch ' + (s.unlockAll ? 'on' : '') + '" data-act="toggle" data-v="unlockAll" role="switch" aria-checked="' + s.unlockAll + '" aria-label="체험 모드"></button></div>' +
       '</section>' +
       '<section class="card stack"><div class="sec-title"><h2 style="font-size:15px">학습 기록 백업</h2></div><p class="small muted" style="margin:0">' + (window.JP_APP ? '학습 기록은 이 앱 안에 저장됩니다. 앱을 지우면 함께 사라지니 가끔 백업 파일로 내보내 두세요 (드라이브·카카오톡 "나와의 채팅" 등으로 보내 두면 편해요).' : '학습 기록은 이 기기의 브라우저에 저장됩니다. 브라우저 데이터를 지우면 사라질 수 있으니 가끔 백업 파일로 내보내 두세요.') + '</p>' +
       '<div class="row"><button class="btn sm ghost" data-act="export">백업 내보내기</button><label class="btn sm ghost" for="importFile">백업 불러오기</label><input id="importFile" type="file" accept="application/json,.json" class="sr" data-input="import"></div>' +
       '<div class="danger-zone"><div class="row" style="justify-content:space-between"><div><div class="l">처음부터 다시 시작</div><div class="small muted">모든 진도·복습·배지가 지워집니다.</div></div><button class="btn sm bad" data-act="reset">' + (ui.resetArm ? '한 번 더 누르면 삭제' : '초기화') + '</button></div></div></section>';
+  }
+  // 설치형 앱: 새 버전이 있으면 홈에 알림 (app/native.js가 JP.update를 채움)
+  var APK_PAGE = 'https://2nhyeok.kr/apk';
+  function updateBanner() {
+    var u = JP.update;
+    if (!u || !u.newer) return '';
+    return '<div class="banner"><b>새 버전(' + esc(u.latest) + ')이 나왔어요.</b> 지금 설치된 버전은 ' + esc(u.current) + '입니다. 내려받아 덮어 설치하면 학습 기록은 그대로 유지돼요.' +
+      '<div class="row" style="margin-top:8px"><a class="btn sm" href="' + APK_PAGE + '">내려받기 페이지 열기</a></div></div>';
+  }
+  function appInfoHtml() {
+    if (!window.JP_APP) return '';
+    var u = JP.update || {};
+    return '<div class="set-row"><div><div class="l">앱 버전</div><div class="d">' + esc(u.current || '확인 중') + (u.newer ? ' · 새 버전 ' + esc(u.latest) + ' 있음' : u.checked ? ' · 최신 버전' : '') + '</div></div><button class="btn sm ghost" data-act="checkUpdate">새 버전 확인</button></div>';
   }
   // 휴대폰 앱 설치 안내 (웹에서만. 설치형 앱·claude.ai 미리보기 안에서는 숨김)
   var APK_URL = 'https://github.com/hyogiman/jpnst/releases/latest/download/animimi.apk';
@@ -613,6 +628,7 @@
     return '<details class="card"><summary style="cursor:pointer;font-weight:700">이 앱은 이렇게 설계되었어요</summary><div class="gram-d" style="margin-top:10px">' +
       '<p><b>간격 반복(SRS)</b> · 에빙하우스의 망각 곡선 연구 이후 반복 확인된 "간격 효과"를 적용해, 배운 항목을 1·2·4·7·14·30·60일 간격으로 다시 묻습니다.</p>' +
       '<p><b>인출 연습</b> · 다시 읽기보다 "떠올리기"가 기억을 더 강하게 만든다는 연구(시험 효과)에 따라, 매 화를 평가로 마무리합니다.</p>' +
+      '<p><b>힌트는 답한 뒤에</b> · 문제에서는 한자·로마자를 숨겨 스스로 떠올리게 하고, 답을 고른 뒤 정답 카드로 보여 줍니다. 쉽게 풀리는 문제보다 조금 애써 떠올린 문제가 오래 기억된다는 연구(로버트 비요크의 \'바람직한 어려움\')를 따랐습니다. 설정에서 힌트를 다시 켤 수 있어요.</p>' +
       '<p><b>듣기 우선</b> · 목표가 애니 청해이므로 모든 단어·예문에 음성을 붙이고, 평가마다 듣기 문항을 최소 3개 넣었습니다. 6장에서는 장면 대화를 한국어 자막 → 일본어 자막 → 자막 없음 순서로 듣습니다.</p>' +
       '<p><b>한국어 화자 맞춤</b> · 어순·조사·한자음이 닮은 점을 적극 활용해 설명합니다(예: 約束 = 약속).</p>' +
       '<p><b>구어 집중</b> · 교과서 존댓말만으로는 애니가 들리지 않기 때문에 반말·문말 조사·축약(〜てる, 〜ちゃう)·역할어를 따로 다룹니다.</p>' +
@@ -867,8 +883,11 @@
         (noVoice ? '<div class="q-small">(음성 없음) <span class="jp">' + esc(p.audio) + '</span></div>' : '');
     } else if (p.big) {
       body += '<div class="' + p.cls + '">' + esc(p.big) + '</div>';
-      if (p.small) body += '<div class="q-small jp">' + esc(p.small) + '</div>';
-      if (p.ro) body += '<div class="q-small">' + esc(p.ro) + '</div>';
+      // 한자·로마자는 답을 맞히는 단서가 되므로 기본으로 숨기고, 답을 고른 뒤 정답 카드에서 보여 줌
+      if (st().settings.qHints) {
+        if (p.small) body += '<div class="q-small jp">' + esc(p.small) + '</div>';
+        if (p.ro) body += '<div class="q-small">' + esc(p.ro) + '</div>';
+      }
       if (p.audioBtn) body += audioBtn(p.audioBtn);
     } else if (p.html) {
       body += '<div class="q-sent">' + p.html + '</div>';
@@ -934,11 +953,8 @@
         if (ok) JP.sfx('hit');
       }
       stampPop(ok);
-      setTimeout(function () {
-        document.getElementById('fb').innerHTML = '';
-        if (k === 'boss' && (run.boss.hp <= 0 || run.boss.lives <= 0)) { nextStep(); return; }
-        advance();
-      }, 720);
+      var myRun = run;
+      setTimeout(function () { if (run === myRun && document.getElementById('fb')) showFeedback(q, ok); }, 600);
     } else {
       if (!ok && k === 'practice' && !q._retry) { var again = Object.assign({}, q, { _retry: true, options: q.options ? U.shuffle(q.options) : q.options, tokens: q.tokens ? U.shuffle(q.tokens) : q.tokens, left: q.left ? U.shuffle(q.left) : q.left, right: q.right ? U.shuffle(q.right) : q.right }); run.queue.push(again); }
       showFeedback(q, ok);
@@ -957,7 +973,7 @@
     if (!rv) return '';
     if (rv.dialog) return dialogHtml(rv.dialog, 'all');
     if (rv.html) return '<div class="reveal"><div class="txt"><div class="jp">' + rv.html + '</div><div class="kana">' + esc(rv.kana) + '</div><div class="ko">' + esc(rv.ko) + '</div></div>' + audioBtn(rv.audio) + '</div>';
-    return '<div class="reveal"><div class="txt"><div class="jp" style="font-size:24px">' + esc(rv.big) + (rv.sub ? ' <span class="small muted" style="font-family:var(--font-body)">' + esc(rv.sub) + '</span>' : '') + '</div>' + (rv.ko ? '<div class="ko">' + esc(rv.ko) + '</div>' : '') + (rv.note ? '<div class="small muted">' + esc(rv.note) + '</div>' : '') + (rv.hint ? '<div class="small muted">' + esc(rv.hint) + '</div>' : '') + '</div>' + (rv.audio ? audioBtn(rv.audio) : '') + '</div>';
+    return '<div class="reveal"><div class="txt"><div class="jp" style="font-size:24px">' + esc(rv.big) + (rv.kanji ? ' <span style="font-size:20px;color:var(--ink-2)">' + esc(rv.kanji) + '</span>' : '') + (rv.sub ? ' <span class="small muted" style="font-family:var(--font-body)">' + esc(rv.sub) + '</span>' : '') + '</div>' + (rv.ko ? '<div class="ko">' + esc(rv.ko) + '</div>' : '') + (rv.note ? '<div class="small muted">' + esc(rv.note) + '</div>' : '') + (rv.hint ? '<div class="small muted">' + esc(rv.hint) + '</div>' : '') + '</div>' + (rv.audio ? audioBtn(rv.audio) : '') + '</div>';
   }
   var PRAISE = ['정답!', '좋아요!', '완벽해요!', 'すごい!', 'その調子!'];
   function showFeedback(q, ok) {
@@ -1131,7 +1147,11 @@
     showKo: function () { run.showKo = true; renderRun(true); },
     shadow: function () { run.shadow = Math.min(3, run.shadow + 1); JP.sfx('tap'); if (run.shadow < 3) say(run.D.line.s.plain); renderRun(true); },
     ans: function (el) { answerChoice(el.dataset.v, el); },
-    cont: function () { document.getElementById('fb').innerHTML = ''; advance(); },
+    cont: function () {
+      document.getElementById('fb').innerHTML = '';
+      if (stepNow().k === 'boss' && (run.boss.hp <= 0 || run.boss.lives <= 0)) { nextStep(); return; }
+      advance();
+    },
     tok: function (el) { var i = +el.dataset.i; if (run.order.indexOf(i) >= 0 || run.answered) return; run.order.push(i); JP.sfx('tap'); var r = renderOrder(run.cur); rerenderQ(r); },
     untok: function (el) { if (run.answered) return; run.order.splice(+el.dataset.j, 1); rerenderQ(renderOrder(run.cur)); },
     orderCheck: function () {
@@ -1157,6 +1177,14 @@
     setEngine: function (el) { st().settings.engine = el.dataset.v; save(); render(); say('こんにちは'); },
     setTheme: function (el) { st().settings.theme = el.dataset.v; st().settings.themeSet = true; save(); render(); },
     export: function () { exportBackup(); },
+    checkUpdate: function () {
+      if (!JP.checkUpdate) return;
+      toast('새 버전을 확인하는 중…');
+      JP.checkUpdate(true).then(function (u) {
+        render();
+        toast(!u || u.failed ? '확인하지 못했어요. 인터넷 연결을 확인해 주세요.' : u.newer ? '새 버전(' + u.latest + ')이 있어요. 홈 화면의 안내를 눌러 주세요.' : '최신 버전이에요.');
+      });
+    },
     reset: function () {
       if (!ui.resetArm) { ui.resetArm = true; render(); setTimeout(function () { ui.resetArm = false; }, 5000); return; }
       ui.resetArm = false; S.reset(); ui.chapter = null; render(); toast('처음 상태로 돌아갔어요.');

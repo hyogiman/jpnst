@@ -102,7 +102,7 @@
 
   /* ---------- 어휘 ---------- */
   function vocabReveal(v) {
-    return { big: v.r, sub: [vocabLabel(v), romajiOn(v) ? (v.ro || C.romaji(v.r)) : ''].filter(Boolean).join(' · '), ko: v.m, audio: v.r, hint: v.h };
+    return { big: v.r, kanji: vocabLabel(v), sub: romajiOn(v) ? (v.ro || C.romaji(v.r)) : '', ko: v.m, audio: v.r, hint: v.h };
   }
   // 같은 소리(동음이의어)의 단어는 오답 보기에서 제외: 듣기 문제에서 정답이 둘이 되지 않도록
   function vocabOthers(v) { var r = C.toHira(v.r); return nearFirst(vocabPool(), v).filter(function (x) { return C.toHira(x.r) !== r; }); }
