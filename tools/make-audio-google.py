@@ -318,6 +318,7 @@ def main():
     ap.add_argument('--report', help='항목별 결과(JSON) 저장 경로'); ap.add_argument('--limit', type=int, default=0, help='시험용: 앞에서 N개만')
     ap.add_argument('--dry', action='store_true', help='시험용: 앱 파일(audio/·audio-index.js)을 쓰지 않음')
     ap.add_argument('--rpm', type=int, default=150, help='분당 요청 수 상한 (Chirp 3: HD 기본 한도는 프로젝트당 분당 200건)')
+    ap.add_argument('--redo', help='이 JSON 목록(항목 키)에 있는 녹음은 이전 결과를 다시 쓰지 않고 새로 고름')
     ap.add_argument('--proxy-key', action='store_true', help='키 없이 보냄 (Claude 클라우드 환경의 네트워크 시크릿이 X-Goog-Api-Key 헤더를 붙이는 경우)')
     a = ap.parse_args()
     key = os.environ.get('GOOGLE_TTS_KEY') or (open(a.key_file).read().strip() if a.key_file else '')
@@ -338,12 +339,13 @@ def main():
     results = {}
     done = [0]
     prev_sigs, prev_read = load_previous()
+    redo = set(json.load(open(a.redo, encoding='utf-8'))) if a.redo else set()
     reused = [0]
     def work(task):
         (voice, text, ruby_s, rate, n, is_kana), its = task
         # 조건이 같은 녹음이 이미 있으면 그대로 씀 (요청·다시 압축 없음)
         sig = signature(task[0])
-        hit = next((it for it in its if prev_sigs.get(it['hash']) == sig), None) if prev_read else None
+        hit = next((it for it in its if prev_sigs.get(it['hash']) == sig), None) if prev_read and not any(it['key'] in redo for it in its) else None
         if hit:
             mp3 = prev_read(hit['hash'])
             if mp3:
@@ -372,6 +374,15 @@ def main():
             h, vr, dur = voicing(x, sr)
             takes.append({'x': x, 'sr': sr, 'hnr': h, 'vr': vr, 'dur': dur, 'take': t, 'vf': voiced_frac(trim(x, sr), sr)})
         if extra: best = choose('kana' if is_kana else 'x', takes)
+        if not is_kana and best['vf'] < 0.15:
+            # 그래도 거의 속삭이면(울린 비율 0.15 미만): 단어는 마침표를 붙인 입력으로 2번, 문장은 3번 더 만들어 봄
+            more = [(text + '。', t) for t in range(2)] if short and not re.search(r'[。！？!?…]$', text) else [(text, t) for t in range(n + extra, n + extra + 3)]
+            for tx, t in more:
+                x, sr = cl.synth(voice, tx, ruby, rate, t)
+                h, vr, dur = voicing(x, sr)
+                takes.append({'x': x, 'sr': sr, 'hnr': h, 'vr': vr, 'dur': dur, 'take': t, 'text': tx, 'vf': voiced_frac(trim(x, sr), sr)})
+            prev, best = best, choose('x', takes)
+            if best['vf'] < prev['vf']: best = prev        # 더 덜 울리는 후보로는 바꾸지 않음
         if is_kana:
             # 글자는 다른 표기로도 만들어 후보를 늘림: 히라가나(は·へ는 조사 わ·え로 읽힐 수 있어 빼고), 마침표를 붙인 가타카나.
             # 같은 가타카나만 넣으면 비슷한(때로 똑같은) 소리가 반복되고, 가끔 모음까지 속삭이듯(무성음) 나오기 때문
