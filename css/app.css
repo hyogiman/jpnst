@@ -82,9 +82,11 @@ h1, h2, h3 { text-wrap: balance; margin: 0; }
 /* ---------- 앱 셸 ---------- */
 .shell { max-width: 560px; margin: 0 auto; min-height: 100%; display: flex; flex-direction: column; }
 .topbar {
-  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
+  /* 휴대폰 상태 표시줄(시계·배터리) 높이만큼 위 여백을 넣고 맨 위(0)에 붙임 — 상태 표시줄 밑까지 제목줄 배경이 덮어
+     처음 화면에서 제목줄이 가려지지 않고, 스크롤할 때 본문이 제목줄 위로 비치지 않게 */
+  position: sticky; top: 0; z-index: 20;
   display: flex; align-items: center; gap: 10px;
-  padding: 10px 16px;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) 16px 10px;
   background: color-mix(in srgb, var(--paper) 88%, transparent);
   backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--line);

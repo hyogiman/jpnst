@@ -23,7 +23,7 @@
  - 같은 입력도 만들 때마다 조금씩 달라 가끔 숨소리가 섞이므로, 여러 번 만들어 가장 맑은 것을 고름
    (글자 4번, 단어 3번, 문장 2번. 맑기 = 조화음 대 잡음비)
    똑같은 요청에는 똑같은 소리가 돌아올 때가 많아, 두 번째부터는 음량 값(volumeGainDb)을 0.05dB씩 바꿔 보냄
- - 앞뒤 무음은 여유를 남기고 줄임(소리 끝을 자르지 않음), 96kbps MP3
+ - 앞뒤는 말소리 바로 앞(0.08초, 글자는 0.12초)·뒤(0.18초)까지만 남김(말하기 전 숨소리·잡음 제거), 96kbps MP3
  - 요청 속도: Chirp 3: HD는 기본 한도가 프로젝트당 분당 200건이라 분당 150건으로 묶어 보냄(--rpm).
    한도에 걸리면(429) 잠시 쉬었다가 이어 가고, 만든 소리는 --cache 폴더에 남아 다시 실행해도 또 요청하지 않음
 """
@@ -213,14 +213,24 @@ def voicing(x, sr):
         if rmax > 0.5: vo += 1; hs.append(10 * np.log10(rmax / (1 - rmax)))
     return (float(np.median(hs)) if hs else float('nan')), (vo / tot if tot else 0.0), dur
 
-def trim(x, sr, lead=0.10, tail=0.28, thr_db=-50):
-    """앞뒤 무음 줄이기: 최대 음량보다 50dB 낮은 소리까지는 남기고(소리 끝을 자르지 않음) 여유를 둠"""
-    fr = int(sr * 0.005); m = len(x) // fr
+def trim(x, sr, lead=0.08, tail=0.18):
+    """앞뒤 줄이기: 말소리 바로 앞뒤까지만 남김
+    구글 음성은 말하기 전후에 작은 숨소리·잡음(최대 음량보다 35~55dB 낮음)을 넣을 때가 있고, 천천히 읽는 글자에서는
+    이것이 0.6~1.4초나 돼서, 예전처럼 50dB 기준으로 자르면 1초 가까이 쉬었다가 소리가 났음.
+    그래서 최대보다 30dB 낮은 소리부터를 말소리로 보고 앞 0.08초·뒤 0.18초만 여유로 남김(잦아드는 끝소리 보존).
+    말소리와 0.25초 넘게 떨어진 아주 짧은 소리(0.12초 미만)는 숨소리·딸깍 소리로 보고 뺌"""
+    fr = int(sr * 0.01); m = len(x) // fr
     if m == 0: return x
     e = 10 * np.log10((x[:m * fr].reshape(m, fr) ** 2).mean(1) + 1e-12)
-    on = np.where(e > e.max() + thr_db)[0]
-    if not len(on): return x
-    a = max(0, on[0] * fr - int(lead * sr)); b = min(len(x), (on[-1] + 1) * fr + int(tail * sr))
+    act = e > e.max() - 30
+    seg = []                                         # 말소리 덩어리 [시작, 끝) (0.15초 미만 틈은 이어 붙임)
+    for k in np.where(act)[0]:
+        if seg and k - seg[-1][1] < 15: seg[-1][1] = k + 1
+        else: seg.append([k, k + 1])
+    if not seg: return x
+    while len(seg) > 1 and seg[0][1] - seg[0][0] < 12 and seg[1][0] - seg[0][1] >= 25: seg.pop(0)
+    while len(seg) > 1 and seg[-1][1] - seg[-1][0] < 12 and seg[-1][0] - seg[-2][1] >= 25: seg.pop()
+    a = max(0, seg[0][0] * fr - int(lead * sr)); b = min(len(x), seg[-1][1] * fr + int(tail * sr))
     return x[a:b]
 
 def morae(kana):
@@ -286,7 +296,7 @@ def main():
             h, vr, dur = voicing(x, sr)
             takes.append({'x': x, 'sr': sr, 'hnr': h, 'vr': vr, 'dur': dur, 'take': t})
         if extra: best = choose('kana' if is_kana else 'x', takes)
-        y = MA.finish(trim(best['x'], best['sr']), best['sr'])
+        y = MA.finish(trim(best['x'], best['sr'], lead=0.12 if is_kana else 0.08), best['sr'])   # 천천히 읽는 글자는 첫소리가 길어 여유를 조금 더
         mp3 = MA.to_mp3(y, best['sr'], kbps=96)
         with cl.lock:
             done[0] += 1
