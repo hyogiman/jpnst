@@ -219,12 +219,14 @@ def voicing(x, sr):
         if rmax > 0.5: vo += 1; hs.append(10 * np.log10(rmax / (1 - rmax)))
     return (float(np.median(hs)) if hs else float('nan')), (vo / tot if tot else 0.0), dur
 
-def trim(x, sr, lead=0.08, tail=0.18):
+def trim(x, sr, lead=0.08, tail=0.18, maxlead=0.15):
     """앞뒤 줄이기: 말소리 바로 앞뒤까지만 남김
     구글 음성은 말하기 전후에 작은 숨소리·잡음(최대 음량보다 35~55dB 낮음)을 넣을 때가 있고, 천천히 읽는 글자에서는
     이것이 0.6~1.4초나 돼서, 예전처럼 50dB 기준으로 자르면 1초 가까이 쉬었다가 소리가 났음.
     그래서 최대보다 30dB 낮은 소리부터를 말소리로 보고 앞 0.08초·뒤 0.18초만 여유로 남김(잦아드는 끝소리 보존).
-    말소리와 0.25초 넘게 떨어진 아주 짧은 소리(0.12초 미만)는 숨소리·딸깍 소리로 보고 뺌"""
+    말소리와 0.25초 넘게 떨어진 아주 짧은 소리(0.12초 미만)는 숨소리·딸깍 소리로 보고 뺌.
+    또 숨소리가 30dB 기준을 살짝 넘나들며 말소리 앞에 이어 붙는 경우(최대 0.7초 늦게 시작)가 있어, 분명한 말소리(최대보다
+    20dB 낮은 소리 이상)가 시작되기 maxlead초(0.15초, 글자는 0.3초)보다 앞은 숨소리로 봄(약한 첫소리 ㅅ·ㅎ 등은 이 안에 들어옴)"""
     fr = int(sr * 0.01); m = len(x) // fr
     if m == 0: return x
     e = 10 * np.log10((x[:m * fr].reshape(m, fr) ** 2).mean(1) + 1e-12)
@@ -236,7 +238,10 @@ def trim(x, sr, lead=0.08, tail=0.18):
     if not seg: return x
     while len(seg) > 1 and seg[0][1] - seg[0][0] < 12 and seg[1][0] - seg[0][1] >= 25: seg.pop(0)
     while len(seg) > 1 and seg[-1][1] - seg[-1][0] < 12 and seg[-1][0] - seg[-2][1] >= 25: seg.pop()
-    a = max(0, seg[0][0] * fr - int(lead * sr)); b = min(len(x), seg[-1][1] * fr + int(tail * sr))
+    start = seg[0][0]
+    loud = np.where(e > e.max() - 20)[0]
+    if len(loud): start = max(start, loud[0] - int(round(maxlead / 0.01)))
+    a = max(0, start * fr - int(lead * sr)); b = min(len(x), seg[-1][1] * fr + int(tail * sr))
     return x[a:b]
 
 def morae(kana):
@@ -257,7 +262,7 @@ def choose(kind, takes):
 
 # 녹음마다 만든 조건(목소리·입력·읽기 지정·속도·횟수·자르기 방식)의 서명을 tools/audio-manifest.json에 남겨 두고,
 # 다음에 만들 때 조건이 같으면 지금 묶음의 MP3를 그대로 다시 씀 → 캐시가 없는 새 작업 공간에서도 바뀐 항목만 요청
-TRIM_VER = 'trim-30dB-v2'
+TRIM_VER = 'trim-30dB-v3'
 MANIFEST = os.path.join(ROOT, 'tools', 'audio-manifest.json')
 def signature(task_key):
     voice, text, ruby_s, rate, n, is_kana = task_key
@@ -338,7 +343,7 @@ def main():
             h, vr, dur = voicing(x, sr)
             takes.append({'x': x, 'sr': sr, 'hnr': h, 'vr': vr, 'dur': dur, 'take': t})
         if extra: best = choose('kana' if is_kana else 'x', takes)
-        y = MA.finish(trim(best['x'], best['sr'], lead=0.12 if is_kana else 0.08), best['sr'])   # 천천히 읽는 글자는 첫소리가 길어 여유를 조금 더
+        y = MA.finish(trim(best['x'], best['sr'], lead=0.12 if is_kana else 0.08, maxlead=0.30 if is_kana else 0.15), best['sr'])   # 천천히 읽는 글자는 첫소리가 길어 여유를 조금 더
         mp3 = MA.to_mp3(y, best['sr'], kbps=96)
         with cl.lock:
             done[0] += 1
