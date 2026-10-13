@@ -393,6 +393,14 @@ def main():
                     h, vr, dur = voicing(x, sr)
                     takes.append({'x': x, 'sr': sr, 'hnr': h, 'vr': vr, 'dur': dur, 'take': t, 'text': tx, 'vf': voiced_frac(trim(x, sr), sr)})
             best = choose('kana', takes)
+            if best['vf'] < 0.45:
+                # 그래도 모음이 약하면(울린 비율 0.45 미만) 가타카나로 4번, 다른 표기로 2번씩 더 만들어 봄 (더 덜 울리는 쪽으로는 안 바꿈)
+                for tx, t in [(text, t) for t in range(n + extra, n + extra + 4)] + [(tx, t) for tx in alts for t in (2, 3)]:
+                    x, sr = cl.synth(voice, tx, ruby, rate, t)
+                    h, vr, dur = voicing(x, sr)
+                    takes.append({'x': x, 'sr': sr, 'hnr': h, 'vr': vr, 'dur': dur, 'take': t, 'text': tx, 'vf': voiced_frac(trim(x, sr), sr)})
+                prev, best = best, choose('kana', takes)
+                if best['vf'] < prev['vf']: best = prev
         y = MA.finish(trim(best['x'], best['sr'], lead=0.12 if is_kana else 0.08, maxlead=0.30 if is_kana else 0.15), best['sr'])   # 천천히 읽는 글자는 첫소리가 길어 여유를 조금 더
         mp3 = MA.to_mp3(y, best['sr'], kbps=96)
         with cl.lock:
