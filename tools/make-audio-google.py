@@ -2,9 +2,10 @@
 """녹음 음성 생성기 (Google Cloud Text-to-Speech · Chirp 3: HD)
 
 입력: node tools/audio-texts.js 가 만든 JSON
-출력: audio/pack0-<해시>.mp3 ~ pack6-<해시>.mp3, js/data/audio-index.js  (형식은 make-audio.py와 같음)
+출력: audio/pack0-<해시>.mp3 ~ pack6-<해시>.mp3 (섞어 듣기), pack2-sulafat-<해시>.mp3 등 (목소리별), js/data/audio-index.js
 
 키: 환경 변수 GOOGLE_TTS_KEY 또는 --key-file 경로 (키는 절대 저장소에 넣지 말 것)
+    Claude 클라우드 환경에서는 네트워크 시크릿(허용 사이트 texttospeech.googleapis.com, 헤더 X-Goog-Api-Key)으로 두고 --proxy-key
 사용법:
   node tools/audio-texts.js > /tmp/audio-texts.json
   GOOGLE_TTS_KEY=... python3 tools/make-audio-google.py /tmp/audio-texts.json --cache /tmp/gtts-cache
@@ -16,6 +17,7 @@
    · 단어: 네 목소리를 고르게 나눔 / 소리 구별 짝은 두 단어를 같은 목소리로
    · 예문·애니 대사: 남자 말투(おれ·お前·ぞ 등)는 남성, 여자 말투(わよ·かしら 등)는 여성, 나머지는 고르게
    · 장면 대화: 등장인물의 성별에 맞춰 인물마다 목소리 하나를 고정
+   · 목소리 고르기(설정)용: 장면 대화를 뺀 모든 항목을 네 목소리로 하나씩 더 만듦 (audio-texts.js의 voice=Despina 등)
  - 읽기: 앱의 후리가나 그대로 읽게 함. 한 글자 한자는 후리가나로 바꿔 넣고, 두 글자 이상 한자는 읽기를 지정
    (Chirp 3: HD의 일본어 요미가나 지정 — 12개 중 11개 반영을 소리 모양 비교로 확인)
    읽기 지정이 무시될 때를 대비해, 사전(Open JTalk)의 기본 읽기가 후리가나와 다른 말(九時→くじ, 辛い→からい 등)은
@@ -107,11 +109,12 @@ def plan(items):
     jobs, odd = [], []
     for it in items:
         k, synth = it['kind'], it['synth']
+        fixed = it['voice'] if it['voice'] in VOICE else None   # 목소리 고르기용 항목은 그 목소리로 (읽기·속도·횟수는 기본과 같게)
         if k == 'kana':
             # 가나만 있는 말에는 읽기 지정이 안 됨(API가 거부) → 소리가 같은 글자로 바꿔 넣음(ヲ→オ 등)
-            jobs.append((it, KANA_VOICE, KANA_FIX.get(synth, synth), [], 0.5, 4)); continue
+            jobs.append((it, fixed or KANA_VOICE, KANA_FIX.get(synth, synth), [], 0.5, 4)); continue
         if k == 'static':
-            text, ruby = STATIC[synth]; jobs.append((it, KANA_VOICE, text, ruby, None, 2)); continue
+            text, ruby = STATIC[synth]; jobs.append((it, fixed or KANA_VOICE, text, ruby, None, 2)); continue
         if k in ('vocab', 'pair'):
             w = (it.get('w') or '').replace('〜', '').replace('~', '').strip()
             core = okurigana_split(w, synth) if (w and w != synth and KANJI.search(w) and len(w) > 1) else None
@@ -122,7 +125,7 @@ def plan(items):
             else:
                 text, ruby = synth, []                       # 가나 단어·한 글자 한자·섞인 단어: 가나로
                 if synth in PARTICLE_WA: text = synth[:-1] + 'わ'   # こんにちは의 は는 '와'
-            voice = ALL4[bucket(it['group'] or synth, 4)]
+            voice = fixed or ALL4[bucket(it['group'] or synth, 4)]
             jobs.append((it, voice, text, ruby, None, 3)); continue
         text, ruby = it['gtext'] or synth, [tuple(p) for p in it['ruby']]
         # 사전의 기본 읽기와 다르게 읽는 한자(九時→くじ, 一回→いっかい 등)는 읽기 지정 대신 가나로 바꿔 넣음
@@ -134,7 +137,9 @@ def plan(items):
             for kj, r in sorted(ruby, key=lambda p: -len(p[0])):
                 if kj in swap: text = text.replace(kj, r)
             ruby = [p for p in ruby if p[0] not in swap and p[0] in text]
-        if k == 'dlg':
+        if fixed:
+            voice = fixed
+        elif k == 'dlg':
             voice = dlg_voice[(it['day'], it['who'])]
         else:
             plain = synth
@@ -142,12 +147,13 @@ def plan(items):
             elif FEMALE_STYLE.search(plain): voice = FEMALE[bucket(plain, 2)]
             else: voice = ALL4[bucket(plain, 4)]
         jobs.append((it, voice, text, ruby, None, 2))
-    if odd: print('사전의 기본 읽기와 달라 가나로 넣은 말 %d개: %s' % (len(odd), ' '.join(dict.fromkeys(odd))), file=sys.stderr)
+    if odd: print('사전의 기본 읽기와 달라 가나로 넣은 말 %d개: %s' % (len(dict.fromkeys(odd)), ' '.join(dict.fromkeys(odd))), file=sys.stderr)
     return jobs
 
 class Client:
     def __init__(self, key, cache, rpm=150):
-        self.url = 'https://texttospeech.googleapis.com/v1/text:synthesize?key=' + key
+        # key가 비어 있으면 키 없이 보냄: Claude 클라우드 환경의 네트워크 시크릿이 X-Goog-Api-Key 헤더로 붙여 줌
+        self.url = 'https://texttospeech.googleapis.com/v1/text:synthesize' + ('?key=' + key if key else '')
         self.cache = cache; self.chars = 0; self.calls = 0; self.lock = threading.Lock()
         # 분당 요청 수 제한: 요청 사이 간격을 60/rpm 초 이상으로 벌림 (동시 작업이 여러 개여도 전체 합계 기준)
         self.gap = 60.0 / rpm if rpm else 0.0; self.next_t = 0.0; self.pace = threading.Lock()
@@ -249,15 +255,41 @@ def choose(kind, takes):
         t['score'] = h - pen
     return max(takes, key=lambda t: t['score'])
 
+# 녹음마다 만든 조건(목소리·입력·읽기 지정·속도·횟수·자르기 방식)의 서명을 tools/audio-manifest.json에 남겨 두고,
+# 다음에 만들 때 조건이 같으면 지금 묶음의 MP3를 그대로 다시 씀 → 캐시가 없는 새 작업 공간에서도 바뀐 항목만 요청
+TRIM_VER = 'trim-30dB-v2'
+MANIFEST = os.path.join(ROOT, 'tools', 'audio-manifest.json')
+def signature(task_key):
+    voice, text, ruby_s, rate, n, is_kana = task_key
+    return hashlib.sha1(json.dumps([voice, text, ruby_s, rate, n, TRIM_VER], ensure_ascii=False).encode()).hexdigest()[:12]
+def load_previous():
+    """(항목 해시 → 서명, 항목 해시 → 지금 MP3 바이트를 읽는 함수)"""
+    try:
+        sigs = json.load(open(MANIFEST, encoding='utf-8'))
+        src = open(os.path.join(ROOT, 'js', 'data', 'audio-index.js'), encoding='utf-8').read()
+        packs = json.loads(re.search(r'packs: (\[.*?\])', src).group(1)); mp = json.loads(re.search(r'map: (\{.*\})\n', src).group(1))
+    except (OSError, ValueError, AttributeError):
+        return {}, None
+    bufs = {}
+    def read(h):
+        if h not in mp: return None
+        p, off, ln = mp[h]
+        if p not in bufs:
+            try: bufs[p] = open(os.path.join(ROOT, packs[p]), 'rb').read()
+            except OSError: return None
+        return bytes(bufs[p][off:off + ln])
+    return sigs, read
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('texts'); ap.add_argument('--key-file'); ap.add_argument('--cache'); ap.add_argument('--workers', type=int, default=6)
     ap.add_argument('--report', help='항목별 결과(JSON) 저장 경로'); ap.add_argument('--limit', type=int, default=0, help='시험용: 앞에서 N개만')
     ap.add_argument('--dry', action='store_true', help='시험용: 앱 파일(audio/·audio-index.js)을 쓰지 않음')
     ap.add_argument('--rpm', type=int, default=150, help='분당 요청 수 상한 (Chirp 3: HD 기본 한도는 프로젝트당 분당 200건)')
+    ap.add_argument('--proxy-key', action='store_true', help='키 없이 보냄 (Claude 클라우드 환경의 네트워크 시크릿이 X-Goog-Api-Key 헤더를 붙이는 경우)')
     a = ap.parse_args()
     key = os.environ.get('GOOGLE_TTS_KEY') or (open(a.key_file).read().strip() if a.key_file else '')
-    if not key: sys.exit('GOOGLE_TTS_KEY 환경 변수나 --key-file이 필요합니다')
+    if not key and not a.proxy_key: sys.exit('GOOGLE_TTS_KEY 환경 변수나 --key-file(또는 --proxy-key)이 필요합니다')
     if a.cache: os.makedirs(a.cache, exist_ok=True)
     items = json.load(open(a.texts, encoding='utf-8'))
     if a.limit: items = items[:a.limit]
@@ -273,8 +305,18 @@ def main():
     tasks = list(uniq.items())
     results = {}
     done = [0]
+    prev_sigs, prev_read = load_previous()
+    reused = [0]
     def work(task):
         (voice, text, ruby_s, rate, n, is_kana), its = task
+        # 조건이 같은 녹음이 이미 있으면 그대로 씀 (요청·다시 압축 없음)
+        sig = signature(task[0])
+        hit = next((it for it in its if prev_sigs.get(it['hash']) == sig), None) if prev_read else None
+        if hit:
+            mp3 = prev_read(hit['hash'])
+            if mp3:
+                with cl.lock: reused[0] += 1; done[0] += 1
+                return task, mp3, {'voice': voice, 'text': text, 'ruby': json.loads(ruby_s), 'hnr': None, 'dur': None, 'takes': [], 'fallback': False, 'reused': True}
         ruby = json.loads(ruby_s)
         takes = []; fallback = None
         for t in range(n):
@@ -308,42 +350,50 @@ def main():
             for it in task[1]: results[it['hash']] = (it, mp3, info)
 
     # 묶음 파일 쓰기 (make-audio.py와 같은 형식)
+    #  - 기본(섞어 듣기) 묶음: pack0(가나·고정 문장), pack1~6(챕터별)
+    #  - 목소리 묶음: pack2-sulafat 등 (설정에서 목소리를 고른 경우용). 기본 묶음에 이미 있는 소리는 그 자리를 같이 씀
     packs, index, report = {}, {}, []
-    placed = {}
-    for it in items:
+    placed = {}                                       # id(mp3) → (묶음 이름표, 위치, 길이)
+    for it in sorted(items, key=lambda it: it['voice'] in VOICE):   # 기본 항목 먼저
         _, mp3, info = results[it['hash']]
-        buf = packs.setdefault(it['pack'], bytearray())
-        k = (it['pack'], id(mp3))
-        if k not in placed:
-            placed[k] = [it['pack'], len(buf), len(mp3)]; buf.extend(mp3)
-        index[it['hash']] = placed[k]
+        if id(mp3) not in placed:
+            label = str(it['pack']) + ('-' + it['voice'].lower() if it['voice'] in VOICE else '')
+            buf = packs.setdefault(label, bytearray())
+            placed[id(mp3)] = (label, len(buf), len(mp3)); buf.extend(mp3)
+        index[it['hash']] = placed[id(mp3)]
         rate = None
         reading = it['kana'] or it['synth']
-        if info['dur']: rate = round(morae(reading) / info['dur'], 1)
+        if info.get('dur'): rate = round(morae(reading) / info['dur'], 1)
         report.append(dict(info, key=it['key'], kind=it['kind'], morae_per_sec=rate))
     if a.dry:
         if a.report: json.dump(report, open(a.report, 'w'), ensure_ascii=False, indent=0)
         print('시험 실행: 앱 파일은 쓰지 않음 · API 호출 %d번, 보낸 글자 %d자' % (cl.calls, cl.chars), file=sys.stderr)
         return
     os.makedirs(os.path.join(ROOT, 'audio'), exist_ok=True)
+    labels = sorted(packs, key=lambda l: ('-' in l, int(l.split('-')[0]), l))   # 기본 묶음 0~6이 먼저 (서비스 워커가 pack0을 미리 받음)
+    order = {l: i for i, l in enumerate(labels)}
+    index = {h: [order[e[0]], e[1], e[2]] for h, e in index.items()}
     total, names = 0, {}
-    for p, buf in sorted(packs.items()):
-        names[p] = 'audio/pack%d-%s.mp3' % (p, hashlib.sha1(buf).hexdigest()[:8])
-        with open(os.path.join(ROOT, names[p]), 'wb') as f: f.write(buf)
-        total += len(buf); print('%s %.1f MB' % (names[p], len(buf) / 1e6), file=sys.stderr)
+    for l in labels:
+        buf = packs[l]
+        names[l] = 'audio/pack%s-%s.mp3' % (l, hashlib.sha1(buf).hexdigest()[:8])
+        with open(os.path.join(ROOT, names[l]), 'wb') as f: f.write(buf)
+        total += len(buf); print('%s %.1f MB' % (names[l], len(buf) / 1e6), file=sys.stderr)
     for f in os.listdir(os.path.join(ROOT, 'audio')):
-        if re.fullmatch(r'pack\d+(-[0-9a-f]+)?\.mp3', f) and 'audio/' + f not in names.values():
+        if re.fullmatch(r'pack\d+(-[a-z]+)?(-[0-9a-f]+)?\.mp3', f) and 'audio/' + f not in names.values():
             os.remove(os.path.join(ROOT, 'audio', f))
     js = ('/* 자동 생성: tools/make-audio-google.py — 직접 수정하지 마세요\n'
           ' * 음성: %s\n */\n'
           '(function (g) {\n  var JP = (g.JP = g.JP || {});\n'
           '  JP.audioIndex = {\n    packs: %s,\n    silent: "data:audio/mpeg;base64,%s",\n    map: %s\n  };\n'
           '})(typeof window !== "undefined" ? window : globalThis);\n') % (
-        CREDIT, json.dumps([names[p] for p in range(max(packs) + 1)]), base64.b64encode(MA.silent_mp3()).decode(),
+        CREDIT, json.dumps([names[l] for l in labels]), base64.b64encode(MA.silent_mp3()).decode(),
         json.dumps(index, separators=(',', ':')))
     with open(os.path.join(ROOT, 'js', 'data', 'audio-index.js'), 'w', encoding='utf-8') as f: f.write(js)
+    sigs = {it['hash']: signature(k) for k, its in tasks for it in its if not results[it['hash']][2].get('fallback')}
+    with open(MANIFEST, 'w', encoding='utf-8') as f: json.dump(dict(sorted(sigs.items())), f, separators=(',', ':'))
     if a.report: json.dump(report, open(a.report, 'w'), ensure_ascii=False, indent=0)
-    print('총 %d개 클립 (만든 소리 %d개, API 호출 %d번, 보낸 글자 %d자), %.1f MB' % (len(items), len(tasks), cl.calls, cl.chars, total / 1e6), file=sys.stderr)
+    print('총 %d개 클립 (만든 소리 %d개 중 그대로 다시 쓴 것 %d개, API 호출 %d번, 보낸 글자 %d자), %.1f MB' % (len(items), len(tasks), reused[0], cl.calls, cl.chars, total / 1e6), file=sys.stderr)
 
 if __name__ == '__main__':
     main()

@@ -584,6 +584,8 @@
     return '<div class="sec-title"><h2>설정</h2><span class="jp">せってい</span></div><section class="card">' +
       (window.JP_APP ? '' : '<div class="set-row"><div><div class="l">음성 방식</div><div class="d">녹음 음성(구글 최신 음성, 목소리 4개)은 어떤 휴대폰·브라우저에서도 같은 소리로 나옵니다</div></div><div class="seg">' + [['clips', '녹음 음성'], ['device', '기기 음성']].map(function (o) { return '<button class="' + ((s.engine || 'clips') === o[0] ? 'on' : '') + '" data-act="setEngine" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join('') + '</div></div>' +
       (s.engine === 'device' ? '<div class="set-row"><div><div class="l">기기 일본어 음성</div><div class="d">' + (SP.deviceHasJa() ? '설치된 일본어 음성 ' + SP.voices.length + '개' : '이 기기·브라우저에서 일본어 음성을 찾지 못했어요') + '</div></div>' + (vopts ? '<select id="voiceSel" data-input="voice">' + vopts + '</select>' : '') + '</div>' : '')) +
+      (SP.useClips() ? '<div class="set-row"><div><div class="l">목소리</div><div class="d">섞어 듣기는 네 목소리를 고루 들려줘요. 하나를 고르면 장면 대화(인물마다 목소리 고정)를 뺀 모든 음성이 그 목소리로 나와요</div></div><select data-input="speaker" aria-label="목소리">' +
+        [['', '섞어 듣기 (추천)']].concat(JP.SPEAKERS.map(function (v) { return [v[0], v[0] + ' (' + v[1] + ')']; })).map(function (o) { return '<option value="' + o[0] + '"' + ((s.speaker || '') === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></div>' : '') +
       '<div class="set-row"><div><div class="l">말하기 속도</div><div class="d">기본 속도 <span class="tabnum" id="rateVal">' + s.rate.toFixed(2) + '</span>배</div></div><input id="rateRange" type="range" min="0.6" max="1.3" step="0.05" value="' + s.rate + '" data-input="rate"></div>' +
       '<div class="set-row"><div class="l">음성 테스트</div>' + audioBtn('アニメを字幕なしで楽しめるように、毎日少しずつ頑張りましょう。') + '</div>' +
       '<div class="set-row"><div><div class="l">로마자 표시</div><div class="d">자동: 1장(문자 단계)에서만 표시</div></div><div class="seg">' + [['auto', '자동'], ['always', '항상'], ['never', '숨김']].map(function (o) { return '<button class="' + (s.romaji === o[0] ? 'on' : '') + '" data-act="setRomaji" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join('') + '</div></div>' +
@@ -1243,6 +1245,7 @@
   document.addEventListener('change', function (e) {
     var k = e.target.dataset && e.target.dataset.input;
     if (k === 'voice') { st().settings.voice = e.target.value; SP.choose(); save(); say('こんにちは'); }
+    else if (k === 'speaker') { st().settings.speaker = e.target.value; save(); JP.clips.prefetch([0, C.chapterOf(currentDay()).n]); say('こんにちは'); }
     else if (k === 'import') {
       var f = e.target.files && e.target.files[0]; if (!f) return;
       var rd = new FileReader();

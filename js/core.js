@@ -37,7 +37,7 @@
   function fresh() {
     return {
       v: 1, createdAt: Date.now(), updatedAt: 0,
-      settings: { rate: 1, voice: '', engine: 'clips', romaji: 'auto', furigana: true, sfx: true, haptics: true, unlockAll: false, qHints: false },
+      settings: { rate: 1, voice: '', speaker: '', engine: 'clips', romaji: 'auto', furigana: true, sfx: true, haptics: true, unlockAll: false, qHints: false },
       prog: {}, xp: 0,
       streak: { n: 0, best: 0, last: null, freeze: 0 },
       act: {}, srs: {}, lis: '', hist: [], badges: {},  // lis: 최근 청해 문항 정오 기록 ('1'=정답, '0'=오답, 최대 50개)
@@ -167,7 +167,16 @@
       }
       return Clips.packs[p];
     },
-    prefetch: function (list) { (list || []).forEach(function (p) { if (Clips.index() && Clips.index().packs[p]) Clips.loadPack(p).catch(function () {}); }); },
+    // 챕터 묶음 미리 받기 (목소리를 골랐으면 그 목소리 묶음도: audio/pack2-sulafat-xxxx.mp3)
+    prefetch: function (list) {
+      var I = Clips.index(); if (!I) return;
+      var sp = String((JP.store.state && JP.store.state.settings.speaker) || '').toLowerCase();
+      (list || []).forEach(function (p) {
+        var idx = [p];
+        if (sp) I.packs.forEach(function (name, i) { if (name.indexOf('/pack' + p + '-' + sp + '-') >= 0) idx.push(i); });
+        idx.forEach(function (i) { if (I.packs[i]) Clips.loadPack(i).catch(function () {}); });
+      });
+    },
     url: function (key) {
       var e = Clips.entry(key), h = JP.audioHash(key);
       if (!e) return Promise.reject(new Error('no clip'));
@@ -261,8 +270,10 @@
       var base = (JP.store.state && JP.store.state.settings.rate) || 1;
       var rate = U.clamp(base * (opt.rate || 1), 0.5, 2);
       if (Speech.useClips()) {
-        var key = JP.audioKey(text, opt.voice), key2 = JP.audioKey(text, 'f');
-        var k = Clips.entry(key) ? key : Clips.entry(key2) ? key2 : null;
+        // 설정에서 고른 목소리가 있으면 그 목소리 녹음부터. 장면 대화(opt.voice 지정)는 인물마다 정한 목소리 그대로
+        var pick = JP.store.state && JP.store.state.settings.speaker;
+        var keys = (pick && !opt.voice ? [JP.audioKey(text, pick)] : []).concat([JP.audioKey(text, opt.voice), JP.audioKey(text, 'f')]);
+        var k = keys.filter(function (x) { return !!Clips.entry(x); })[0] || null;
         if (k) return Clips.play(k, rate).then(function (ok) { return ok || Speech.device(text, opt, rate); });
       }
       return Speech.device(text, opt, rate);

@@ -6,6 +6,7 @@
  *  - toks = 예문의 토큰별 [표기, 가나 읽기] (조사 は·へ·を 발음 검사용), w = 단어의 한자 표기 (억양·읽기 정확도용)
  *  - gtext·ruby = 구글 음성용 입력: 한 글자 한자는 후리가나로 바꾼 문장, 두 글자 이상 한자는 [한자, 읽기] 목록(읽기 지정용)
  *  - who·day = 장면 대화의 화자 이름과 날짜, group = 소리 구별 짝(두 단어를 같은 목소리로)
+ *  - voice: f·m = 섞어 듣기(기본)용, Despina 등 목소리 이름 = 설정에서 그 목소리를 고른 경우용(장면 대화 제외, base = 기본 항목 키)
  */
 const fs = require('fs'), path = require('path'), vm = require('vm');
 const root = path.join(__dirname, '..');
@@ -51,6 +52,11 @@ for (let d = 1; d <= JP.totalDays; d++) {
     });
   }
 }
+// 목소리 고르기(설정)용: 장면 대화를 뺀 모든 항목을 네 목소리로 하나씩 더 (키: 'Despina|문장' 등, base = 섞어 듣기용 키)
+[...out.values()].filter(x => x.kind !== 'dlg').forEach(x => JP.SPEAKERS.forEach(([v]) => {
+  const key = JP.audioKey(x.key.slice(x.key.indexOf('|') + 1), v);
+  out.set(key, Object.assign({}, x, { key, hash: JP.audioHash(key), voice: v, base: x.key }));
+}));
 const list = [...out.values()];
 const hashes = new Set(list.map(x => x.hash));
 if (hashes.size !== list.length) { console.error('hash collision!'); process.exit(1); }
