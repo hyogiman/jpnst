@@ -132,7 +132,7 @@
   JP.store = Store;
 
   /* ================= 음성 ① 녹음 클립 (기본) =================
-   * tools/make-audio.py가 만든 audio/pack*.mp3 묶음(VOICEVOX 합성)에서 필요한 구간만 잘라 재생.
+   * tools/make-audio-google.py가 만든 audio/pack*.mp3 묶음(구글 Chirp 3: HD 합성)에서 필요한 구간만 잘라 재생.
    * 기기 TTS가 없는 안드로이드 인앱 브라우저·웹뷰에서도 소리가 나도록 하기 위함.
    */
   var Clips = {
