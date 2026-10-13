@@ -86,7 +86,7 @@ npx http-server -p 8080 .
 ```
 
 ## 음성
-- 기본은 **녹음 음성**입니다. 모든 가나·단어·예문·대사(2,086개 클립, 약 __GMB__MB)를 **구글 Cloud Text-to-Speech의 최신 음성(Chirp 3: HD)** 으로 미리 만들어 `audio/`에 넣어 두었습니다. 휴대폰에 일본어 음성이 없어도, 앱 안 브라우저에서도 같은 소리가 나고, 한 번 받으면 오프라인에서도 재생됩니다. 듣는 것은 구글에 접속하지 않으므로 몇 번을 들어도 비용이 들지 않습니다.
+- 기본은 **녹음 음성**입니다. 모든 가나·단어·예문·대사(2,086개 클립, 약 35MB)를 **구글 Cloud Text-to-Speech의 최신 음성(Chirp 3: HD)** 으로 미리 만들어 `audio/`에 넣어 두었습니다. 휴대폰에 일본어 음성이 없어도, 앱 안 브라우저에서도 같은 소리가 나고, 한 번 받으면 오프라인에서도 재생됩니다. 듣는 것은 구글에 접속하지 않으므로 몇 번을 들어도 비용이 들지 않습니다.
 - **목소리 네 개를 섞어 씁니다**: 여성 **Despina·Sulafat**, 남성 **Algenib·Fenrir** (일본어 Chirp 3: HD 목소리 30개(여성 14·남성 16)를 같은 말로 만들어 학습자가 직접 듣고 고름).
   - 글자(가나): Despina 한 목소리로, 0.5배속으로 또렷하게
   - 단어: 네 목소리에 고르게 나눔. 소리 구별 짝(かき·かぎ 등)은 두 단어를 같은 목소리로
@@ -106,9 +106,9 @@ npx http-server -p 8080 .
   GOOGLE_TTS_KEY=<API 키> python3 tools/make-audio-google.py /tmp/audio-texts.json --cache /tmp/gtts-cache --report /tmp/gtts-report.json
   ```
   - API 키: Google Cloud 콘솔에서 Cloud Text-to-Speech API를 사용 설정하고 만든 키. **Text-to-Speech API로만 제한**하고, **저장소에는 절대 넣지 마세요.**
-  - 비용: 전체를 한 번 만드는 데 약 3만 자(여러 번 만들어 고르는 것 포함). Chirp 3: HD는 한 달 100만 자까지 무료입니다([구글 가격표](https://cloud.google.com/text-to-speech/pricing), 2026년 10월 확인).
+  - 비용: 전체를 한 번 만드는 데 약 3만 1천 자(여러 번 만들어 고르는 것 포함, 2026년 10월 실제 생성 기준). Chirp 3: HD는 한 달 100만 자까지 무료입니다([구글 가격표](https://cloud.google.com/text-to-speech/pricing), 2026년 10월 확인).
   - `--cache`를 쓰면 이미 만든 소리는 다시 요청하지 않아, 문장 몇 개를 고쳤을 때는 그 문장만 비용이 듭니다. `--dry`로 앱 파일을 건드리지 않고 시험할 수 있습니다.
-  - 요청 속도: Chirp 3: HD의 기본 한도는 프로젝트당 **분당 200건**이라([구글 할당량 문서](https://cloud.google.com/text-to-speech/quotas)) 분당 150건으로 묶어 보냅니다(`--rpm`). 전체를 처음 만들면 요청이 약 5천 건이라 40분쯤 걸립니다. 한도에 걸려도(429) 잠시 쉬었다가 이어 갑니다.
+  - 요청 속도: Chirp 3: HD의 기본 한도는 프로젝트당 **분당 200건**이라([구글 할당량 문서](https://cloud.google.com/text-to-speech/quotas)) 분당 150건으로 묶어 보냅니다(`--rpm`). 전체를 처음 만들면 요청이 약 6천 2백 건이라 40분 남짓 걸립니다. 한도에 걸려도(429) 잠시 쉬었다가 이어 갑니다.
 - 인터넷·API 키 없이 만드는 방법(이전 음성): `tools/make-audio.py`는 VOICEVOX(VOICEVOX:冥鳴ひまり·玄野武宏)로 같은 형식의 음성을 만듭니다. 쓰려면 VOICEVOX core 0.15와 ONNX Runtime 1.13.1이 필요하고(파일 맨 위 설명 참고), 해당 캐릭터의 크레딧을 앱에 표시해야 합니다.
 - 묶음 파일 이름에 내용 해시가 붙어(`pack0-1a2b3c4d.mp3`) 다시 만들면 휴대폰도 새 음성을 받습니다.
 

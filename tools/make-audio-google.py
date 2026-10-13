@@ -22,6 +22,7 @@
    한자 대신 가나로 넣음
  - 같은 입력도 만들 때마다 조금씩 달라 가끔 숨소리가 섞이므로, 여러 번 만들어 가장 맑은 것을 고름
    (글자 4번, 단어 3번, 문장 2번. 맑기 = 조화음 대 잡음비)
+   똑같은 요청에는 똑같은 소리가 돌아올 때가 많아, 두 번째부터는 음량 값(volumeGainDb)을 0.05dB씩 바꿔 보냄
  - 앞뒤 무음은 여유를 남기고 줄임(소리 끝을 자르지 않음), 96kbps MP3
  - 요청 속도: Chirp 3: HD는 기본 한도가 프로젝트당 분당 200건이라 분당 150건으로 묶어 보냄(--rpm).
    한도에 걸리면(429) 잠시 쉬었다가 이어 가고, 만든 소리는 --cache 폴더에 남아 다시 실행해도 또 요청하지 않음
@@ -165,6 +166,9 @@ class Client:
             if ruby: inp['customPronunciations'] = {'pronunciations': [{'phrase': p, 'phoneticEncoding': Y, 'pronunciation': r} for p, r in ruby]}
             ac = {'audioEncoding': 'LINEAR16', 'sampleRateHertz': 24000}
             if rate: ac['speakingRate'] = rate
+            # 똑같은 요청에는 똑같은 소리가 돌아올 때가 많아, 두 번째부터는 음량을 0.05dB씩 아주 조금 바꿔 새로 만들게 함
+            # (들리지 않는 차이이고, 음량은 뒤에서 다시 맞춤)
+            if take: ac['volumeGainDb'] = round(0.05 * take, 2)
             body = json.dumps({'input': inp, 'voice': {'languageCode': 'ja-JP', 'name': VOICE[voice]}, 'audioConfig': ac}).encode()
             for attempt in range(8):
                 self.wait_turn()
