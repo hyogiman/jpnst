@@ -6593,12 +6593,15 @@ JP.addChapter({
       '<div class="danger-zone"><div class="row" style="justify-content:space-between"><div><div class="l">처음부터 다시 시작</div><div class="small muted">모든 진도·복습·배지가 지워집니다.</div></div><button class="btn sm bad" data-act="reset">' + (ui.resetArm ? '한 번 더 누르면 삭제' : '초기화') + '</button></div></div></section>';
   }
   // 설치형 앱: 새 버전이 있으면 홈에 알림 (app/native.js가 JP.update를 채움)
-  var APK_PAGE = 'https://2nhyeok.kr/apk';
+  var APK_PAGE = 'https://2nhyeok.kr/apk/';
+  // 앱 파일은 GitHub에서 바로 받음 (2nhyeok.kr 사이트에 연결이 안 돼도 내려받을 수 있게)
+  var APK_URL = 'https://github.com/hyogiman/jpnst/releases/latest/download/animimi.apk';
   function updateBanner() {
     var u = JP.update;
     if (!u || !u.newer) return '';
     return '<div class="banner"><b>새 버전(' + esc(u.latest) + ')이 나왔어요.</b> 지금 설치된 버전은 ' + esc(u.current) + '입니다. 내려받아 덮어 설치하면 학습 기록은 그대로 유지돼요.' +
-      '<div class="row" style="margin-top:8px"><a class="btn sm" href="' + APK_PAGE + '">내려받기 페이지 열기</a></div></div>';
+      '<div class="row" style="margin-top:8px"><a class="btn sm" href="' + APK_URL + '">바로 내려받기</a><a class="btn sm ghost" href="' + APK_PAGE + '">설치 방법 보기</a></div>' +
+      '<div class="small muted" style="margin-top:6px">브라우저가 열리고 내려받기가 시작돼요. 화면이 비어 있어도 아래쪽 안내나 알림창에서 animimi.apk를 눌러 설치하세요.</div></div>';
   }
   function appInfoHtml() {
     if (!window.JP_APP) return '';
@@ -6606,7 +6609,6 @@ JP.addChapter({
     return '<div class="set-row"><div><div class="l">앱 버전</div><div class="d">' + esc(u.current || '확인 중') + (u.newer ? ' · 새 버전 ' + esc(u.latest) + ' 있음' : u.checked ? ' · 최신 버전' : '') + '</div></div><button class="btn sm ghost" data-act="checkUpdate">새 버전 확인</button></div>';
   }
   // 휴대폰 앱 설치 안내 (웹에서만. 설치형 앱·claude.ai 미리보기 안에서는 숨김)
-  var APK_URL = 'https://github.com/hyogiman/jpnst/releases/latest/download/animimi.apk';
   function installHtml() {
     if (window.JP_APP || window.top !== window.self) return '';
     return '<section class="card stack"><div class="sec-title"><h2 style="font-size:15px">휴대폰 앱으로 설치</h2><span class="jp">アプリ</span></div>' +
