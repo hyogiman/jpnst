@@ -24,6 +24,9 @@
    한자 대신 가나로 넣음
  - 같은 입력도 만들 때마다 조금씩 달라 가끔 숨소리가 섞이므로, 여러 번 만들어 가장 맑은 것을 고름
    (글자 4번, 단어 3번, 문장 2번. 맑기 = 조화음 대 잡음비)
+   고를 때는 성대 울림이 뚜렷한 비율(엄격한 울린 비율)을 크게 봄: 구글 음성은 가끔 모음까지 속삭이듯(무성음) 말하는데,
+   맑기는 울린 칸만 보고 재서 이런 후보가 오히려 높게 나옴(특히 남성 목소리). 모두 속삭이면 몇 번 더 만듦.
+   글자는 히라가나·마침표 붙인 표기로도 2번씩 더 만들어 후보를 늘림(は·へ는 조사 わ·え로 읽힐 수 있어 히라가나 제외)
    똑같은 요청에는 똑같은 소리가 돌아올 때가 많아, 두 번째부터는 음량 값(volumeGainDb)을 0.05dB씩 바꿔 보냄
  - 앞뒤는 말소리 바로 앞(0.08초, 글자는 0.12초)·뒤(0.18초)까지만 남김(말하기 전 숨소리·잡음 제거), 96kbps MP3
  - 요청 속도: Chirp 3: HD는 기본 한도가 프로젝트당 분당 200건이라 분당 150건으로 묶어 보냄(--rpm).
@@ -219,6 +222,24 @@ def voicing(x, sr):
         if rmax > 0.5: vo += 1; hs.append(10 * np.log10(rmax / (1 - rmax)))
     return (float(np.median(hs)) if hs else float('nan')), (vo / tot if tot else 0.0), dur
 
+def voiced_frac(x, sr):
+    """엄격한 울린 비율: 말소리 구간(최대보다 30dB 낮은 소리부터) 중 성대 울림이 뚜렷한 10ms 칸
+    (주기성 0.7 넘음 + 최대보다 25dB 낮은 소리 이상)의 비율. 속삭이듯(무성음) 나온 소리는 0에 가까움.
+    맑기(조화음 대 잡음비)는 울린 칸만 보고 재므로, 거의 속삭이고 잠깐만 울린 소리가 오히려 높게 나올 수 있어 함께 봄"""
+    x = x / (np.abs(x).max() + 1e-9)
+    fr, win = int(sr * 0.01), int(sr * 0.04); m = len(x) // fr
+    if m == 0: return 0.0
+    e = 10 * np.log10((x[:m * fr].reshape(m, fr) ** 2).mean(1) + 1e-12); e -= e.max()
+    act = np.where(e > -30)[0]
+    if not len(act): return 0.0
+    lo, hi = int(sr / 500), int(sr / 70); vo = 0
+    for k in range(act[0], act[-1] + 1):
+        f = x[k * fr:k * fr + win]
+        if len(f) < win or e[k] <= -25: continue
+        f = f - f.mean(); ac = np.correlate(f, f, 'full')[win - 1:]
+        if ac[0] > 0 and (ac / ac[0])[lo:hi].max() > 0.7: vo += 1
+    return vo / (act[-1] - act[0] + 1)
+
 def trim(x, sr, lead=0.08, tail=0.18, maxlead=0.15):
     """앞뒤 줄이기: 말소리 바로 앞뒤까지만 남김
     구글 음성은 말하기 전후에 작은 숨소리·잡음(최대 음량보다 35~55dB 낮음)을 넣을 때가 있고, 천천히 읽는 글자에서는
@@ -249,24 +270,30 @@ def morae(kana):
     return len(re.sub(r'[ゃゅょぁぃぅぇぉャュョァィゥェォ]', '', k))
 
 def choose(kind, takes):
-    """여러 번 만든 것 중 가장 맑은 것. 길이가 다른 것들과 크게 다르면(끊김·덧말) 감점"""
+    """여러 번 만든 것 중 가장 맑은 것. 길이가 다른 것들과 크게 다르면(끊김·덧말) 감점. 글자는 모음의 울린 비율을 우선"""
     durs = [t['dur'] for t in takes]; med = float(np.median(durs))
     for t in takes:
         h = t['hnr'] if not np.isnan(t['hnr']) else -20
         if kind == 'kana':
+            # 글자는 모음이 성대 울림으로 또렷이 나는지(엄격한 울린 비율)를 가장 크게 봄 — 속삭이듯 나온 'ハ…'는 맑기만으로는 못 거름
+            # (맑기 40처럼 튀는 값이 나오는 거의 무성음 후보가 있어 맑기는 25에서 자름)
             pen = 0 if 0.28 <= t['dur'] <= 0.9 else 15
-        else:
-            pen = 0 if 0.75 * med <= t['dur'] <= 1.35 * med else 10
-        t['score'] = h - pen
+            t['score'] = 20 * t['vf'] + 0.3 * min(h, 25) - pen
+            continue
+        pen = 0 if 0.75 * med <= t['dur'] <= 1.35 * med else 10
+        t['score'] = 20 * t['vf'] + min(h, 25) - pen   # 단어·문장도 울린 비율을 크게 봄 (남성 목소리에서 속삭이는 후보가 맑기로는 높게 나옴)
     return max(takes, key=lambda t: t['score'])
 
 # 녹음마다 만든 조건(목소리·입력·읽기 지정·속도·횟수·자르기 방식)의 서명을 tools/audio-manifest.json에 남겨 두고,
 # 다음에 만들 때 조건이 같으면 지금 묶음의 MP3를 그대로 다시 씀 → 캐시가 없는 새 작업 공간에서도 바뀐 항목만 요청
 TRIM_VER = 'trim-30dB-v3'
 MANIFEST = os.path.join(ROOT, 'tools', 'audio-manifest.json')
+PICK_VER = 'pick-v3'        # 엄격한 울린 비율을 함께 보고 고르기(속삭이는 후보 거르기)
+KANA_VER = 'kana-pick-v3'   # 글자: 다른 표기 후보 더하기
 def signature(task_key):
     voice, text, ruby_s, rate, n, is_kana = task_key
-    return hashlib.sha1(json.dumps([voice, text, ruby_s, rate, n, TRIM_VER], ensure_ascii=False).encode()).hexdigest()[:12]
+    ver = TRIM_VER + '+' + PICK_VER + ('+' + KANA_VER if is_kana else '')
+    return hashlib.sha1(json.dumps([voice, text, ruby_s, rate, n, ver], ensure_ascii=False).encode()).hexdigest()[:12]
 def load_previous():
     """(항목 해시 → 서명, 항목 해시 → 지금 MP3 바이트를 읽는 함수)"""
     try:
@@ -333,22 +360,34 @@ def main():
                 text, ruby = fallback, []
                 x, sr = cl.synth(voice, text, ruby, rate, t)
             h, vr, dur = voicing(x, sr)
-            takes.append({'x': x, 'sr': sr, 'hnr': h, 'vr': vr, 'dur': dur, 'take': t})
+            takes.append({'x': x, 'sr': sr, 'hnr': h, 'vr': vr, 'dur': dur, 'take': t, 'vf': voiced_frac(trim(x, sr), sr)})
         best = choose('kana' if is_kana else 'x', takes)
-        # 모두 흐리게 나왔으면 몇 번 더 만들어 봄 (짧은 말은 맑기 12, 문장은 10 미만일 때)
+        # 모두 흐리거나 속삭이듯 나왔으면 몇 번 더 만들어 봄 (짧은 말은 맑기 12·울린 비율 0.3(글자 0.5), 문장은 맑기 10·울린 비율 0.25 미만일 때)
         short = is_kana or len(text) <= 6
-        extra = 3 if short and (np.isnan(best['hnr']) or best['hnr'] < 12) else 2 if not short and (np.isnan(best['hnr']) or best['hnr'] < 10) else 0
+        low_v = best['vf'] < (0.5 if is_kana else 0.3 if short else 0.25)
+        low_h = np.isnan(best['hnr']) or best['hnr'] < (12 if short else 10)
+        extra = (3 if short else 2) if (low_v or low_h) else 0
         for t in range(n, n + extra):
             x, sr = cl.synth(voice, text, ruby, rate, t)
             h, vr, dur = voicing(x, sr)
-            takes.append({'x': x, 'sr': sr, 'hnr': h, 'vr': vr, 'dur': dur, 'take': t})
+            takes.append({'x': x, 'sr': sr, 'hnr': h, 'vr': vr, 'dur': dur, 'take': t, 'vf': voiced_frac(trim(x, sr), sr)})
         if extra: best = choose('kana' if is_kana else 'x', takes)
+        if is_kana:
+            # 글자는 다른 표기로도 만들어 후보를 늘림: 히라가나(は·へ는 조사 わ·え로 읽힐 수 있어 빼고), 마침표를 붙인 가타카나.
+            # 같은 가타카나만 넣으면 비슷한(때로 똑같은) 소리가 반복되고, 가끔 모음까지 속삭이듯(무성음) 나오기 때문
+            alts = ([hira(text)] if hira(text) != text and hira(text) not in ('は', 'へ') else []) + [text + '。']
+            for tx in alts:
+                for t in range(2):
+                    x, sr = cl.synth(voice, tx, ruby, rate, t)
+                    h, vr, dur = voicing(x, sr)
+                    takes.append({'x': x, 'sr': sr, 'hnr': h, 'vr': vr, 'dur': dur, 'take': t, 'text': tx, 'vf': voiced_frac(trim(x, sr), sr)})
+            best = choose('kana', takes)
         y = MA.finish(trim(best['x'], best['sr'], lead=0.12 if is_kana else 0.08, maxlead=0.30 if is_kana else 0.15), best['sr'])   # 천천히 읽는 글자는 첫소리가 길어 여유를 조금 더
         mp3 = MA.to_mp3(y, best['sr'], kbps=96)
         with cl.lock:
             done[0] += 1
             if done[0] % 100 == 0: print(f'{done[0]}/{len(tasks)}  (보낸 글자 {cl.chars})', file=sys.stderr, flush=True)
-        return task, mp3, {'voice': voice, 'text': text, 'ruby': ruby, 'hnr': round(best['hnr'], 1) if not np.isnan(best['hnr']) else None,
+        return task, mp3, {'voice': voice, 'text': best.get('text', text), 'vf': round(best['vf'], 2), 'ruby': ruby, 'hnr': round(best['hnr'], 1) if not np.isnan(best['hnr']) else None,
                            'dur': round(best['dur'], 2), 'takes': [round(t['hnr'], 1) if not np.isnan(t['hnr']) else None for t in takes], 'fallback': bool(fallback)}
     with ThreadPoolExecutor(max_workers=a.workers) as ex:
         for task, mp3, info in ex.map(work, tasks):
