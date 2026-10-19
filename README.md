@@ -54,6 +54,16 @@ npm run app            # www/ 생성 + android 프로젝트에 복사
 cd android && ./gradlew assembleRelease   # → app/build/outputs/apk/release/app-release.apk
 ```
 
+### 구글 플레이 판 (출시 준비 중)
+같은 코드로 만든 구글 플레이용 앱 번들(AAB)입니다. 출시 순서는 **[docs/PLAY-STORE.md](docs/PLAY-STORE.md)**, 스토어에 넣을 글과 그림은 **[store/](store/listing-ko.md)**에 있습니다.
+
+- **광고**: 홈과 나(기록) 화면 아래에 Google AdMob 배너 1개. 레슨·평가 중이나 창(라이선스 등)이 열려 있을 때는 숨김. 광고 제거 판매와 보상형 광고는 없음
+- **대상**: 만 18세 이상. 광고 내용 등급은 T(청소년)까지로 제한
+- **개인정보처리방침**: https://2nhyeok.kr/privacy/ (`privacy/index.html`). 유럽 등 동의가 필요한 지역에서는 구글 동의 화면(UMP)이 뜨고, 나 → 설정의 **광고 개인정보 설정**에서 바꿀 수 있음
+- 플레이 판에서는 GitHub 새 버전 확인을 끔(플레이가 업데이트함). 설정에 **개인정보처리방침**·**오픈소스 라이선스** 메뉴가 생김
+- **빌드**: `ANIMIMI_STORE=play node tools/build-app.js`가 `www/index.html`에 플레이 판 표시와 광고 설정을 넣음. 자동 빌드의 `play` 작업이 GitHub Secrets의 `PLAY_UPLOAD_PASSWORD`로 업로드 키(`android/keystore/animimi-upload.p12`, 이 비밀번호로 암호화)를 처음 한 번 만들고, `animimi-play.aab`를 서명해 같은 릴리스에 올림. 광고 ID는 저장소 Variables의 `ADMOB_APP_ID`·`ADMOB_BANNER_ID`(없으면 구글 시험용 광고)
+- 직접 설치판과 앱 ID는 같지만 서명이 달라 서로 덮어 설치되지 않음 → 옮길 때는 백업 내보내기 → 삭제 → 플레이에서 설치 → 백업 불러오기
+
 ### 방법 1. GitHub Pages + 도메인 `2nhyeok.kr` (현재 설정)
 앱은 `main` 브랜치 루트에 있고, `CNAME` 파일에 `2nhyeok.kr`이 지정되어 있습니다.
 1. 저장소 **Settings → Pages** 에서 Source를 `Deploy from a branch`, 브랜치 `main`, 폴더 `/ (root)`로 저장합니다.
@@ -147,11 +157,15 @@ tools/make-audio-google.py  녹음 음성 합성 (구글 Chirp 3: HD, 목소리 
 tools/make-audio.py     녹음 음성 합성 (VOICEVOX, 인터넷 없이 만드는 대안) · 읽기 검사
 tools/build-app.js      Android 앱용 웹 파일(www/) 만들기 — 글꼴을 앱에 넣고 서비스 워커 끔
 tools/make-android-icons.js  Android 앱 아이콘 생성
-app/native.js           앱 전용 연동 (뒤로 가기 버튼, 백업 공유, 상태 표시줄)
+app/native.js           앱 전용 연동 (뒤로 가기 버튼, 백업 공유, 상태 표시줄, 플레이 판 광고 배너·동의)
 apk/index.html          2nhyeok.kr/apk — Android 앱 설치 안내·문제 해결 페이지
+privacy/index.html      2nhyeok.kr/privacy — 개인정보처리방침 (플레이 판 광고 포함)
+store/                  구글 플레이 등록 글(listing-ko.md)·아이콘·대표 이미지·스크린샷
+tools/make-store-assets.js  스토어 그림 만들기 (실제 앱 화면을 Playwright로 캡처)
+docs/PLAY-STORE.md      구글 플레이 출시 안내 (계정·신고·테스트·애드몹)
 capacitor.config.json   Android 앱 설정 (앱 이름·ID)
 android/                Android 프로젝트 (Capacitor)
-.github/workflows/android.yml  APK 자동 빌드 → GitHub Releases
+.github/workflows/android.yml  APK·플레이 AAB 자동 빌드 → GitHub Releases
 ```
 
 ## 콘텐츠 수정하기

@@ -100,6 +100,7 @@ jobs:
           BT="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
           "$BT/apksigner" verify --print-certs "$APK"
           "$BT/aapt2" dump badging "$APK" | grep -E "^package:|application-label:|targetSdkVersion"
+          echo "권한 (플레이의 광고 ID 신고와 맞는지):"; "$BT/aapt2" dump permissions "$APK" | grep -E "permission" || true
           unzip -l "$APK" | grep -E "assets/public/(index.html|audio/pack0|fonts/fonts.css|js/native.js)"
           cp "$APK" animimi.apk
           ls -l animimi.apk
@@ -167,6 +168,11 @@ jobs:
         if: env.SKIP != '1'
         run: |
           if [ ! -f "$KS" ]; then
+            # 만든 키를 main에 올리므로 main에서만 (다른 브랜치에서 만들면 그 브랜치 커밋까지 main에 올라감)
+            if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+              echo "::error::업로드 키가 아직 없습니다. 키는 main에서 처음 한 번 만들어집니다 (Actions에서 main을 골라 실행)."
+              exit 1
+            fi
             keytool -genkeypair -keystore "$KS" -storetype PKCS12 -alias upload -keyalg RSA -keysize 4096 -validity 10000 \
               -storepass "$PW" -keypass "$PW" -dname "CN=Animimi Upload, O=2nhyeok.kr, C=KR"
             git config user.name "github-actions[bot]"

@@ -297,7 +297,7 @@
       if (D.vocab.length) body += '<div class="eyebrow">단어</div><ul class="list-plain" style="margin:6px 0 12px">' + D.vocab.map(function (v) { return '<li><span class="jp">' + esc(v.r) + '</span><span class="muted">' + esc(v.m) + '</span></li>'; }).join('') + '</ul>';
       if (D.note) body += '<div class="eyebrow">인문학 한 스푼</div><p style="margin:4px 0 12px">' + esc(D.note[0]) + '</p>';
     } else {
-      body += '<p class="small">' + (D.type === 'boss' ? '지난 6화의 내용이 섞여 나옵니다. 14문제를 맞히면 보스 격파, 7번 틀리면 패배예요. 격파하면 <b>연속 학습 보호권</b>을 1장 얻습니다(최대 2장).' : D.type === 'listen' ? '이 챕터의 단어·예문·대사·대화를 소리로만 풉니다. 5문항마다 속도가 빨라져요(0.9배 → 1.0배 → 1.2배).' : '챕터 전체를 30문항으로 평가합니다. 70점 이상이면 합격하고 랭크가 올라갑니다.') + '</p>';
+      body += '<p class="small">' + (D.type === 'boss' ? '지난 6화의 내용이 섞여 나옵니다. 14문제를 맞히면 보스 격파, 7번 틀리면 패배예요. 격파하면 <b>연속 학습 보호권</b>을 1장 얻습니다(최대 2장).' : D.type === 'listen' ? '이 챕터의 단어·예문·대사·대화를 소리로만 풉니다. 5문항마다 속도가 빨라져요(0.9배 → 1.0배 → 1.15~1.25배).' : '챕터 전체를 30문항으로 평가합니다. 70점 이상이면 합격하고 랭크가 올라갑니다.') + '</p>';
     }
     if (lock) body += '<div class="banner" style="margin:10px 0"><b>잠겨 있어요.</b> 이전 화의 평가를 70점 이상으로 통과하면 열립니다. (설정의 "체험 모드"로 모든 화를 미리 볼 수 있어요.)</div>';
     else {
