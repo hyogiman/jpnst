@@ -595,6 +595,9 @@
       '<div class="set-row"><div class="l">진동 (오답 시)</div><button class="switch ' + (s.haptics ? 'on' : '') + '" data-act="toggle" data-v="haptics" role="switch" aria-checked="' + s.haptics + '" aria-label="진동"></button></div>' +
       '<div class="set-row"><div><div class="l">화면 테마</div></div><div class="seg">' + [['system', '시스템'], ['light', '밝게'], ['dark', '어둡게']].map(function (o) { return '<button class="' + ((s.theme || 'system') === o[0] ? 'on' : '') + '" data-act="setTheme" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join('') + '</div></div>' +
       appInfoHtml() +
+      '<div class="set-row"><div><div class="l">개인정보처리방침</div><div class="d">학습 기록은 이 기기에만 저장돼요' + (window.JP_STORE === 'play' ? '. 광고는 Google AdMob이 보여 줘요' : '') + '</div></div><a class="btn sm ghost" href="' + PRIVACY_URL + '" rel="noopener">보기</a></div>' +
+      (window.JP_STORE === 'play' && JP.ads && JP.ads.privacy ? '<div class="set-row"><div><div class="l">광고 개인정보 설정</div><div class="d">맞춤 광고 동의를 바꿀 수 있어요</div></div><button class="btn sm ghost" data-act="adPrivacy">설정</button></div>' : '') +
+      (window.JP_APP ? '<div class="set-row"><div><div class="l">오픈소스 라이선스</div><div class="d">이 앱에 쓰인 글꼴·라이브러리</div></div><button class="btn sm ghost" data-act="licenses">보기</button></div>' : '') +
       '<div class="set-row"><div><div class="l">체험 모드</div><div class="d">모든 화의 잠금을 풀어 미리 봅니다 (교육 담당자·검토용)</div></div><button class="switch ' + (s.unlockAll ? 'on' : '') + '" data-act="toggle" data-v="unlockAll" role="switch" aria-checked="' + s.unlockAll + '" aria-label="체험 모드"></button></div>' +
       '</section>' +
       '<section class="card stack"><div class="sec-title"><h2 style="font-size:15px">학습 기록 백업</h2></div><p class="small muted" style="margin:0">' + (window.JP_APP ? '학습 기록은 이 앱 안에 저장됩니다. 앱을 지우면 함께 사라지니 가끔 백업 파일로 내보내 두세요 (드라이브·카카오톡 "나와의 채팅" 등으로 보내 두면 편해요).' : '학습 기록은 이 기기의 브라우저에 저장됩니다. 브라우저 데이터를 지우면 사라질 수 있으니 가끔 백업 파일로 내보내 두세요.') + '</p>' +
@@ -603,6 +606,7 @@
   }
   // 설치형 앱: 새 버전이 있으면 홈에 알림 (app/native.js가 JP.update를 채움)
   var APK_PAGE = 'https://2nhyeok.kr/apk/';
+  var PRIVACY_URL = 'https://2nhyeok.kr/privacy/';
   // 앱 파일은 GitHub에서 바로 받음 (2nhyeok.kr 사이트에 연결이 안 돼도 내려받을 수 있게)
   var APK_URL = 'https://github.com/hyogiman/jpnst/releases/latest/download/animimi.apk';
   function updateBanner() {
@@ -615,6 +619,7 @@
   function appInfoHtml() {
     if (!window.JP_APP) return '';
     var u = JP.update || {};
+    if (window.JP_STORE === 'play') return '<div class="set-row"><div><div class="l">앱 버전</div><div class="d">' + esc(u.current || '확인 중') + ' · 업데이트는 Play 스토어에서 받아요</div></div></div>';
     return '<div class="set-row"><div><div class="l">앱 버전</div><div class="d">' + esc(u.current || '확인 중') + (u.newer ? ' · 새 버전 ' + esc(u.latest) + ' 있음' : u.checked ? ' · 최신 버전' : '') + '</div></div><button class="btn sm ghost" data-act="checkUpdate">새 버전 확인</button></div>';
   }
   // 휴대폰 앱 설치 안내 (웹에서만. 설치형 앱·claude.ai 미리보기 안에서는 숨김)
@@ -1181,6 +1186,12 @@
     setEngine: function (el) { st().settings.engine = el.dataset.v; save(); render(); say('こんにちは'); },
     setTheme: function (el) { st().settings.theme = el.dataset.v; st().settings.themeSet = true; save(); render(); },
     export: function () { exportBackup(); },
+    licenses: function () {
+      showOverlay('<div class="overlay" role="dialog" aria-modal="true" aria-label="오픈소스 라이선스"><div class="scrim" data-act="closeOverlay"></div><div class="sheet"><div class="grab"></div><div class="stack"><h2>오픈소스 라이선스</h2><pre class="lic" id="licText">불러오는 중…</pre><button class="btn ghost block" data-act="closeOverlay">닫기</button></div></div></div>');
+      fetch('licenses.txt').then(function (r) { return r.text(); }).then(function (t) { var el = document.getElementById('licText'); if (el) el.textContent = t; })
+        .catch(function () { var el = document.getElementById('licText'); if (el) el.textContent = '라이선스 파일을 불러오지 못했어요.'; });
+    },
+    adPrivacy: function () { if (JP.ads && JP.ads.privacyForm) JP.ads.privacyForm().catch(function () {}); },
     checkUpdate: function () {
       if (!JP.checkUpdate) return;
       toast('새 버전을 확인하는 중…');
@@ -1284,5 +1295,13 @@
     if (ui.tab !== 'home') { ui.tab = 'home'; render(); window.scrollTo(0, 0); return true; }
     return false;
   }
-  JP.app = { render: render, startRun: startRun, state: function () { return run; }, back: back };
+  // 지금 보이는 화면: 'run'(레슨·평가) / 'overlay'(창) / 'welcome' / 탭 이름 — 광고 배너(구글 플레이 판)를 보일지 판단할 때 씀
+  function screen() {
+    if (run) return 'run';
+    var ov = document.getElementById('overlay');
+    if (ov && ov.innerHTML) return 'overlay';
+    if (!st().onboarded) return 'welcome';
+    return ui.tab;
+  }
+  JP.app = { render: render, startRun: startRun, state: function () { return run; }, back: back, screen: screen };
 })();

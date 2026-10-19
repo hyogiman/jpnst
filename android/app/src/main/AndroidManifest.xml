@@ -24,6 +24,15 @@
 
         </activity>
 
+        <!-- 광고(구글 플레이 판만 켬): AdMob 앱 ID는 빌드할 때 넣음(build.gradle의 admobAppId, 없으면 구글 시험용 ID) -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="${admobAppId}" />
+        <!-- 광고 SDK가 앱을 열자마자 측정을 시작하지 않고, 광고를 초기화할 때까지 미룸 (직접 설치판은 광고를 초기화하지 않음) -->
+        <meta-data
+            android:name="com.google.android.gms.ads.DELAY_APP_MEASUREMENT_INIT"
+            android:value="true" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

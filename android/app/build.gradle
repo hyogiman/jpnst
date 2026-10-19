@@ -3,6 +3,8 @@ apply plugin: 'com.android.application'
 // 버전·서명은 환경 변수로 바꿀 수 있음 (GitHub Actions: .github/workflows/android.yml)
 //  - ANIMIMI_VERSION_CODE / ANIMIMI_VERSION_NAME : 새 APK마다 versionCode가 커져야 덮어 설치(업데이트)됨
 //  - ANIMIMI_KEYSTORE(_PASSWORD) / ANIMIMI_KEY_ALIAS / ANIMIMI_KEY_PASSWORD : 지정하지 않으면 저장소의 개인 배포용 키 사용
+//    (구글 플레이 판은 업로드 키 android/keystore/animimi-upload.p12 — 비밀번호는 GitHub Secrets의 PLAY_UPLOAD_PASSWORD)
+//  - ANIMIMI_ADMOB_APP_ID : 광고(AdMob) 앱 ID. 없으면 구글의 시험용 ID (광고는 구글 플레이 판에서만 켜짐)
 def env = System.getenv()
 def keystorePath = env.ANIMIMI_KEYSTORE ? file(env.ANIMIMI_KEYSTORE) : rootProject.file('keystore/animimi-sideload.jks')
 
@@ -15,6 +17,7 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode Integer.parseInt(env.ANIMIMI_VERSION_CODE ?: '1')
         versionName env.ANIMIMI_VERSION_NAME ?: '1.0.0'
+        manifestPlaceholders = [admobAppId: env.ANIMIMI_ADMOB_APP_ID ?: 'ca-app-pub-3940256099942544~3347511713']
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -25,6 +28,7 @@ android {
     signingConfigs {
         release {
             storeFile keystorePath
+            if (keystorePath.name.endsWith('.p12')) storeType 'pkcs12'
             storePassword env.ANIMIMI_KEYSTORE_PASSWORD ?: 'animimi-sideload'
             keyAlias env.ANIMIMI_KEY_ALIAS ?: 'animimi'
             keyPassword env.ANIMIMI_KEY_PASSWORD ?: 'animimi-sideload'

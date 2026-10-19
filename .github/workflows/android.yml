@@ -1,9 +1,13 @@
-# Android 앱(APK) 자동 빌드
+# Android 앱 자동 빌드
 #  - main에 앱 파일이 바뀌어 올라오면 APK를 만들어 GitHub Releases에 올림
 #    → 휴대폰 내려받기 주소(항상 최신): https://github.com/hyogiman/jpnst/releases/latest/download/animimi.apk
 #  - 다른 브랜치에서는 빌드만 확인 (실행 결과의 Artifacts에서 APK를 받을 수 있음)
 #  - 서명: 저장소 Secrets에 ANIMIMI_KEYSTORE_B64 등이 있으면 그 키를, 없으면 android/keystore의 개인 배포용 키를 씀
-name: Android 앱 (APK)
+#  - 구글 플레이 판(play 작업): 광고를 켠 앱 번들(animimi-play.aab)을 업로드 키로 서명해 같은 릴리스에 함께 올림
+#    · Secrets의 PLAY_UPLOAD_PASSWORD가 있을 때만 만듦. 업로드 키(android/keystore/animimi-upload.p12)가 아직 없으면
+#      이 비밀번호로 처음 한 번 만들어 저장소에 올림 (키 파일은 이 비밀번호로 암호화되어 있음)
+#    · 광고 ID: 저장소 Variables의 ADMOB_APP_ID·ADMOB_BANNER_ID (없으면 구글 시험용 광고)
+name: Android 앱 (APK·구글 플레이 AAB)
 
 on:
   push:
@@ -82,6 +86,14 @@ jobs:
           ANIMIMI_KEY_PASSWORD: ${{ secrets.ANIMIMI_KEY_PASSWORD }}
         run: ./gradlew --no-daemon assembleRelease
 
+      - name: 앱 번들(AAB) 빌드 확인 (작업 브랜치에서만, 올리지 않음)
+        if: github.ref != 'refs/heads/main'
+        working-directory: android
+        run: |
+          ./gradlew --no-daemon bundleRelease
+          ls -l app/build/outputs/bundle/release/app-release.aab
+          unzip -l app/build/outputs/bundle/release/app-release.aab | grep -E "\.so$" || echo "네이티브 라이브러리(.so) 없음"
+
       - name: 서명·내용 확인
         run: |
           APK=android/app/build/outputs/apk/release/app-release.apk
@@ -118,3 +130,97 @@ jobs:
             --title "アニ耳 Android 앱 $VERSION" \
             --notes-file notes.md \
             --latest
+
+  play:
+    needs: apk
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      PW: ${{ secrets.PLAY_UPLOAD_PASSWORD }}
+      KS: android/keystore/animimi-upload.p12
+    steps:
+      - name: 업로드 키 비밀번호 확인
+        run: |
+          if [ -z "$PW" ]; then
+            echo "::notice::Secrets에 PLAY_UPLOAD_PASSWORD가 없어 구글 플레이용 앱 번들은 만들지 않았습니다"
+            echo "SKIP=1" >> "$GITHUB_ENV"
+          fi
+
+      - uses: actions/checkout@v4
+        if: env.SKIP != '1'
+
+      - uses: actions/setup-node@v4
+        if: env.SKIP != '1'
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        if: env.SKIP != '1'
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: 업로드 키 준비 (없으면 처음 한 번 만들어 저장소에 올림)
+        if: env.SKIP != '1'
+        run: |
+          if [ ! -f "$KS" ]; then
+            keytool -genkeypair -keystore "$KS" -storetype PKCS12 -alias upload -keyalg RSA -keysize 4096 -validity 10000 \
+              -storepass "$PW" -keypass "$PW" -dname "CN=Animimi Upload, O=2nhyeok.kr, C=KR"
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add "$KS"
+            git commit -m "Add Google Play upload key (encrypted with PLAY_UPLOAD_PASSWORD)"
+            git pull --rebase origin main && git push origin HEAD:main
+            echo "업로드 키를 새로 만들었습니다."
+          fi
+          keytool -list -v -keystore "$KS" -storetype PKCS12 -storepass "$PW" | grep -E "Alias name|SHA256:" | head -3
+
+      - name: 구글 플레이 판 웹 파일 (광고 켬)
+        if: env.SKIP != '1'
+        env:
+          ANIMIMI_STORE: play
+          ANIMIMI_ADMOB_BANNER_ID: ${{ vars.ADMOB_BANNER_ID }}
+        run: |
+          npm ci
+          node tools/validate.js
+          node tools/build-app.js
+          npx cap sync android
+
+      - name: 앱 번들(AAB) 빌드
+        if: env.SKIP != '1'
+        working-directory: android
+        env:
+          ANIMIMI_VERSION_CODE: ${{ github.run_number }}
+          ANIMIMI_VERSION_NAME: 1.0.${{ github.run_number }}
+          ANIMIMI_KEYSTORE: ${{ github.workspace }}/android/keystore/animimi-upload.p12
+          ANIMIMI_KEYSTORE_PASSWORD: ${{ secrets.PLAY_UPLOAD_PASSWORD }}
+          ANIMIMI_KEY_ALIAS: upload
+          ANIMIMI_KEY_PASSWORD: ${{ secrets.PLAY_UPLOAD_PASSWORD }}
+          ANIMIMI_ADMOB_APP_ID: ${{ vars.ADMOB_APP_ID }}
+        run: ./gradlew --no-daemon bundleRelease
+
+      - name: 서명·내용 확인
+        if: env.SKIP != '1'
+        run: |
+          AAB=android/app/build/outputs/bundle/release/app-release.aab
+          jarsigner -verify "$AAB" | tail -1
+          unzip -l "$AAB" | grep -E "base/assets/public/(index.html|licenses.txt|audio/pack0-)" | head -4
+          unzip -p "$AAB" base/assets/public/index.html | grep -o "JP_STORE = 'play'"
+          echo "네이티브 라이브러리(.so):"; unzip -l "$AAB" | grep -E "\.so$" || echo "  없음"
+          cp "$AAB" animimi-play.aab
+          ls -l animimi-play.aab
+
+      - uses: actions/upload-artifact@v4
+        if: env.SKIP != '1'
+        with:
+          name: animimi-play-aab
+          path: animimi-play.aab
+
+      - name: 릴리스에 함께 올리기
+        if: env.SKIP != '1' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "app-v1.0.${{ github.run_number }}" animimi-play.aab --clobber

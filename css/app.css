@@ -105,6 +105,10 @@ h1, h2, h3 { text-wrap: balance; margin: 0; }
 .chip.rank { font-family: var(--font-display); font-weight: 400; color: var(--shu); border-color: var(--shu-soft); }
 
 main.view { flex: 1; padding: 16px 16px 110px; display: flex; flex-direction: column; gap: 18px; }
+/* 구글 플레이 판의 광고 배너(홈·나 화면, 탭 막대 바로 위)만큼 본문 아래 여백을 늘림 — 높이는 app/native.js가 --ad-h로 넣음 */
+.has-ad main.view { padding-bottom: calc(110px + var(--ad-h, 0px)); }
+.has-ad .toast { bottom: calc(90px + var(--ad-h, 0px) + env(safe-area-inset-bottom, 0px)); }
+.lic { margin: 0; white-space: pre-wrap; word-break: break-word; font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; color: var(--ink-2); }
 
 .tabbar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
