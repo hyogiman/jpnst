@@ -156,7 +156,7 @@
   }
   function audioBtn(text, opts) {
     opts = opts || {};
-    return '<button class="audio-btn ' + (opts.big ? 'big' : '') + (opts.slow ? ' slow' : '') + '" data-act="say" data-t="' + esc(text) + '" data-r="' + (opts.rate || 1) + '" aria-label="' + (opts.slow ? '천천히 듣기' : '듣기') + '">' + (opts.slow ? '<span class="small" style="font-weight:700">0.7</span>' : I.speaker) + '</button>';
+    return '<button class="audio-btn ' + (opts.big ? 'big' : '') + (opts.slow ? ' slow' : '') + '" data-act="say" data-t="' + esc(text) + '" data-r="' + (opts.rate || 1) + '" aria-label="' + (opts.slow ? '천천히 듣기' : '듣기') + '">' + (opts.slow ? '<span class="small" style="font-weight:700">' + (opts.rate || 0.6) + '</span>' : I.speaker) + '</button>';
   }
   // 다른 목소리로 듣기: 네 목소리 녹음이 있는 말만. 누를 때마다 다음 목소리로 재생하고 그 이름을 보여 줌
   // (방금 기본으로 들은 녹음과 같은 목소리는 건너뜀 — 녹음이 같으면 색인의 위치도 같음)

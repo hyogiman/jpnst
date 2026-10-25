@@ -24,7 +24,7 @@ ROMA = {
     'ラ': 'ra', 'リ': 'ri', 'ル': 'ru', 'レ': 're', 'ロ': 'ro', 'ワ': 'wa', 'ヲ': 'o', 'ン': 'N', 'ッ': 'Q',
     'ガ': 'ga', 'ギ': 'gi', 'グ': 'gu', 'ゲ': 'ge', 'ゴ': 'go', 'ザ': 'za', 'ジ': 'ji', 'ズ': 'zu', 'ゼ': 'ze', 'ゾ': 'zo',
     'ダ': 'da', 'ヂ': 'ji', 'ヅ': 'zu', 'デ': 'de', 'ド': 'do', 'バ': 'ba', 'ビ': 'bi', 'ブ': 'bu', 'ベ': 'be', 'ボ': 'bo',
-    'パ': 'pa', 'ピ': 'pi', 'プ': 'pu', 'ペ': 'pe', 'ポ': 'po', 'ヴ': 'vu',
+    'パ': 'pa', 'ピ': 'pi', 'プ': 'pu', 'ペ': 'pe', 'ポ': 'po', 'ヴ': 'bu',   # ヴ는 실제 발음이 대개 ブ
     'ァ': 'a', 'ィ': 'i', 'ゥ': 'u', 'ェ': 'e', 'ォ': 'o', 'ャ': 'ya', 'ュ': 'yu', 'ョ': 'yo', 'ヮ': 'wa',
 }
 _ojt = None
@@ -100,6 +100,36 @@ def dist(a, b):
 def plain(t):
     return PUNCT.sub('', t or '')
 
+def aligned(a, b):
+    """편집 거리가 가장 작은 정렬에서 a의 각 박이 맞붙은 b의 박 {a 위치: b의 박}"""
+    n, m = len(a), len(b)
+    D = [[i + j if not i or not j else 0 for j in range(m + 1)] for i in range(n + 1)]
+    for i in range(1, n + 1):
+        for j in range(1, m + 1):
+            D[i][j] = min(D[i - 1][j] + 1, D[i][j - 1] + 1, D[i - 1][j - 1] + (a[i - 1] != b[j - 1]))
+    i, j, out = n, m, {}
+    while i > 0 and j > 0:
+        if D[i][j] == D[i - 1][j - 1] + (a[i - 1] != b[j - 1]): out[i - 1] = b[j - 1]; i -= 1; j -= 1
+        elif D[i][j] == D[i - 1][j] + 1: i -= 1
+        else: j -= 1
+    return out
+
+PARTICLE = {'は': 'ワ', 'へ': 'エ', 'を': 'オ'}
+def tok_pron(toks):
+    """예문 토큰([표기, 가나 읽기]) → (발음 가타카나, 조사 は·へ 박의 위치). 가나만으로 읽기를 만들면 조사 は가 ハ로 읽혀 버려서,
+    토큰으로 떨어진 조사(は·へ·を)와 では·には 등은 ワ·エ·オ로 바꿔 넣음"""
+    out, marks = '', []
+    for surf, kana in toks or []:
+        k = re.sub(r'[^ァ-ヴー]', '', kata(kana or ''))
+        if surf in PARTICLE:
+            if surf != 'を': marks.append(out)
+            out += PARTICLE[surf]; continue
+        if surf in ('では', 'には', 'とは', 'のは', 'ことは') or surf.startswith('では'):
+            i = k.rfind('ハ') if not surf.startswith('では') else 1
+            marks.append(out + k[:i]); k = k[:i] + 'ワ' + k[i + 1:]
+        out += k
+    return out, marks
+
 def to16k(x, sr):
     """인식기 입력(16kHz)으로 바꾸기 — 창 씌운 sinc 저역 통과 필터로 올렸다 내림 (24kHz → 16kHz는 2배 올려 3분의 1)"""
     x = np.asarray(x, dtype=np.float64)
@@ -128,9 +158,12 @@ def pieces(x, sr, gap=0.3, floor=40):
     b = [0] + [c * fr for c in cuts] + [len(x)]
     return [x[b[i]:b[i + 1]] for i in range(len(b) - 1)]
 
-def judge(kind, wants, surfaces, rec):
+def judge(kind, wants, surfaces, rec, marks=None, flags=None):
     """인식 결과 하나를 판정 → (통과 여부, 박 거리). wants = 기대 발음 가타카나 목록, surfaces = 그대로 맞으면 통과인 표기(한자 단어 등)
-    가나 한 글자는 장음을 무시(loose: 인식기가 キュ를 "九(きゅう)"처럼 늘려 적곤 함), 단어·문장은 장음·촉음까지 구별(strict)"""
+    가나 한 글자는 장음을 무시(loose: 인식기가 キュ를 "九(きゅう)"처럼 늘려 적곤 함), 단어·문장은 장음·촉음까지 구별(strict)
+    marks = wants[0]에서 조사 は·へ가 시작하는 앞부분 목록: 그 박이 ハ·ヘ로 들렸으면(かれは → 枯れ葉·箱·派) 거리와 상관없이 실패.
+    다만 인식기가 は·へ를 글자 그대로 적었으면(가나로 적은 かれは…) 발음 변환이 조사인 줄 몰라 ハ로 읽은 것일 수 있어 '불확실'로만 표시
+    (flags에 'unc' 추가 — 고를 때 확실히 맞은 후보를 먼저 찾음)"""
     r = plain(rec)
     if not r: return False, 99
     if r in surfaces: return True, 0
@@ -149,20 +182,32 @@ def judge(kind, wants, surfaces, rec):
     if kind in ('kana', 'vocab', 'pair'):
         return best == 0, best
     n = max(len(norm(wants[0])), 1)
+    if marks and best:
+        al = aligned(norm(wants[0]), q)
+        for pre in marks:
+            i = len(norm(pre)) if pre else 0
+            if al.get(i) in ('ha', 'he'):
+                if 'は' in r or 'へ' in r:
+                    if flags is not None: flags.append('unc')
+                    break
+                return False, best + 5                            # 조사 は를 ハ, へ를 ヘ로 읽음 (덜 틀린 것을 고를 때도 맨 뒤로)
     return best <= max(1, round(n * 0.08)), best              # 문장: 8% 이내(최소 1박)의 차이는 인식기 오차로 봄
 
 def expect(it):
-    """항목 → (기대 발음 목록, 그대로 통과인 표기)"""
+    """항목 → (기대 발음 목록, 그대로 통과인 표기, 조사 자리). 문장은 토큰의 후리가나로 만든 읽기(조사 반영)와 원문을 형태소 분석한 읽기"""
     text = it['key'].split('|', 1)[1]
     if it['kind'] == 'kana':
         k = kata(text)
-        return [k], {text, k}
+        return [k], {text, k, ''.join(chr(ord(c) - 0x60) if 'ァ' <= c <= 'ヶ' else c for c in k)}, None   # ハ를 は로 적어도 맞음
     if it['kind'] in ('vocab', 'pair'):
         s = it['synth']
         if s in ('こんにちは', 'こんばんは'): s = s[:-1] + 'わ'
         w = (it.get('w') or '').replace('〜', '').replace('~', '')
-        return [kata(s), pron(s)], {x for x in (text, s, kata(s), w) if x}
-    return [pron(it.get('kana') or it['synth']), pron(text)], {plain(text)}
+        return [kata(s), pron(s)], {x for x in (text, s, kata(s), w) if x}, None
+    if it.get('toks'):
+        tp, marks = tok_pron(it['toks'])
+        return [tp, pron(text)], {plain(text)}, marks
+    return [pron(it.get('kana') or it['synth']), pron(text)], {plain(text)}, None
 
 class Checker:
     """후보 녹음 묶음을 두 인식기로 받아 적고 판정. 여러 작업 스레드가 함께 써도 되도록 잠금"""
@@ -202,14 +247,19 @@ class Checker:
         with self.lock:
             t1 = self._rec(self.r1, allc)
             t2 = self._rec(self.r2, allc)
-        wants, surf = expect(it)
+        wants, surf, marks = expect(it)
         out = []
         for i in range(len(clips)):
-            res = []
+            res, unc = [], []
             for t in (t1, t2):
                 texts = [t[i]]
                 if i in split: s, n = split[i]; texts.append(''.join(t[s:s + n]))   # 쉼에서 나눠 받아 적은 것
-                res.append(min(((judge(it['kind'], wants, surf, x), x) for x in texts), key=lambda z: (not z[0][0], z[0][1])))
-            ((o1, d1), a), ((o2, d2), b) = res
-            out.append({'ok': o1 or o2, 'both': o1 and o2, 'r1': a, 'r2': b, 'd': min(d1, d2), 'd1': d1, 'd2': d2})
+                cand = []
+                for x in texts:
+                    fl = []; cand.append((judge(it['kind'], wants, surf, x, marks, fl), x, bool(fl)))
+                res.append(min(cand, key=lambda z: (not z[0][0], z[2], z[0][1])))
+            ((o1, d1), a, u1), ((o2, d2), b, u2) = res
+            # 확실히 맞음: 조사 자리가 불확실하지 않은 쪽으로 통과
+            sure = (o1 and not u1) or (o2 and not u2)
+            out.append({'ok': o1 or o2, 'both': o1 and o2, 'sure': sure, 'r1': a, 'r2': b, 'd': min(d1, d2), 'd1': d1, 'd2': d2})
         return out

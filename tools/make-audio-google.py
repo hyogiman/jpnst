@@ -297,16 +297,30 @@ def choose(kind, takes):
             continue
         pen = 0 if 0.75 * med <= t['dur'] <= 1.35 * med else 10
         t['score'] = 20 * t['vf'] + min(h, 25) - pen   # 단어·문장도 울린 비율을 크게 봄 (남성 목소리에서 속삭이는 후보가 맑기로는 높게 나옴)
+    for t in takes:
+        if t.get('hot'): t['score'] -= 6                # 말하는 도중에 뚝 끊긴 후보는 감점 (끝소리가 잘렸을 수 있음)
     return max(takes, key=lambda t: t['score'])
 
+def hot_tail(y, sr):
+    """소리가 말하는 도중에 끝나는가: 마지막 0.06초에 최대보다 30dB 낮은 소리보다 큰 소리가 있음 (구글 음성이 가끔 뚝 끊어서 보냄)"""
+    fr = int(sr * 0.01); m = len(y) // fr
+    if m < 12: return False
+    e = 10 * np.log10((y[:m * fr].reshape(m, fr) ** 2).mean(1) + 1e-12)
+    return e[-6:].max() > e.max() - 30
+
 def final_clip(t, is_kana, gentle=False):
-    """앱에 넣을 최종 소리(앞뒤 자르기 + 음량 맞추기). gentle: 숨소리·짧은 소리 규칙 없이 앞을 덜 자름"""
+    """앱에 넣을 최종 소리(앞뒤 자르기 + 음량 맞추기). gentle: 숨소리·짧은 소리 규칙 없이 앞을 덜 자름
+    소리가 말하는 도중에 끝나면, 끝의 페이드(0.03초)가 마지막 소리(ます의 す 등)를 깎지 않도록 아주 짧게(0.01초) 줄이고 0.15초 무음을 붙임"""
     ml = None if gentle else (0.30 if is_kana else 0.15)   # 천천히 읽는 글자는 첫소리가 길어 여유를 조금 더
-    return MA.finish(trim(t['x'], t['sr'], lead=0.12 if is_kana else 0.08, maxlead=ml, head=not gentle), t['sr'])
+    y = trim(t['x'], t['sr'], lead=0.12 if is_kana else 0.08, maxlead=ml, head=not gentle)
+    if hot_tail(y, t['sr']):
+        y = y.copy(); k = int(t['sr'] * 0.01); y[-k:] *= np.linspace(1, 0, k)
+        y = np.concatenate([y, np.zeros(int(t['sr'] * 0.15))])
+    return MA.finish(y, t['sr'])
 
 def asr_rank(r):
-    """판정 결과의 순위: 맞음 > 두 인식기 모두 맞음 > 더 잘 맞힌 인식기의 박 거리 > 박 거리 합"""
-    return (r['ok'], r['both'], -r['d'], -min(r['d1'], 9) - min(r['d2'], 9))
+    """판정 결과의 순위: 맞음 > 확실히 맞음(조사 자리가 불확실하지 않음) > 두 인식기 모두 맞음 > 더 잘 맞힌 인식기의 박 거리 > 박 거리 합"""
+    return (r['ok'], r.get('sure', r['ok']), r['both'], -r['d'], -min(r['d1'], 9) - min(r['d2'], 9))
 
 def verify(ck, it, cands, is_kana):
     """후보마다 최종 소리를 음성 인식으로 받아 적어 판정 → t['asr'] = {ok, both, r1, r2, d, d1, d2}, t['y'] = 앱에 넣을 소리.
@@ -323,8 +337,9 @@ def verify(ck, it, cands, is_kana):
 def pick(kind, takes):
     """받아 적기가 맞은 후보 중에서 고름(두 인식기가 다 맞힌 후보를 조금 더 높게). 다 틀리면 가장 덜 틀린 것 중 가장 맑은 것"""
     ok = [t for t in takes if t.get('asr', {}).get('ok')]
+    ok = [t for t in ok if t['asr'].get('sure', True)] or ok           # 확실히 맞은 후보가 있으면 그중에서
     choose(kind, ok or takes)
-    if ok: return max(ok, key=lambda t: t['score'] + (4 if t['asr']['both'] else 0))
+    if ok: return max(ok, key=lambda t: t['score'] + (4 if t['asr']['both'] else 0) + (3 if t['asr']['d'] == 0 else 0))
     return max(takes, key=lambda t: (asr_rank(t['asr']) if 'asr' in t else (False, False, -99), t['score']))
 
 # 녹음마다 만든 조건(목소리·입력·읽기 지정·속도·횟수·자르기 방식)의 서명을 tools/audio-manifest.json에 남겨 두고,
@@ -332,6 +347,7 @@ def pick(kind, takes):
 TRIM_VER = 'trim-30dB-v4'   # 크게 난 짧은 첫소리(げっ 등)는 남김
 MANIFEST = os.path.join(ROOT, 'tools', 'audio-manifest.json')
 PICK_VER = 'pick-v4'        # 엄격한 울린 비율을 함께 보고 고르기(속삭이는 후보 거르기) + 음성 인식 검사(--asr)
+# (뚝 끊긴 소리의 끝 처리·조사 は 판정은 해당 녹음만 --redo로 다시 골라서 반영. 나머지 녹음은 결과가 같아 서명을 바꾸지 않음)
 KANA_VER = 'kana-pick-v4'   # 글자: 0.7배속, 다른 표기 후보 더하기
 def signature(task_key, asr):
     voice, text, ruby_s, rate, n, is_kana = task_key
@@ -422,7 +438,8 @@ def main():
             x, sr = cl.synth(voice, tx, rb, rt, t)
             made.add((tx, json.dumps(rb, ensure_ascii=False), rt, t))
             h, vr, dur = voicing(x, sr)
-            takes.append({'x': x, 'sr': sr, 'hnr': h, 'vr': vr, 'dur': dur, 'take': t, 'text': tx, 'ruby': rb, 'rate': rt, 'vf': voiced_frac(trim(x, sr), sr)})
+            y = trim(x, sr)
+            takes.append({'x': x, 'sr': sr, 'hnr': h, 'vr': vr, 'dur': dur, 'take': t, 'text': tx, 'ruby': rb, 'rate': rt, 'vf': voiced_frac(y, sr), 'hot': hot_tail(y, sr)})
         def more(tx, k, rb=None, rt=None):
             """같은 입력으로 아직 안 만든 번호의 후보를 k개 더 (번호가 같으면 캐시를 다시 씀)"""
             rbs, r, t = json.dumps(ruby if rb is None else rb, ensure_ascii=False), (rate if rt is None else rt), 0
@@ -472,7 +489,7 @@ def main():
             choose(kind, takes)
             top = takes if is_kana else [max(takes, key=lambda t: t['score'])]
             verify(ck, it0, top, is_kana)
-            if is_kana or not (top[0]['asr']['ok'] and top[0]['asr']['both']):
+            if is_kana or not (top[0]['asr']['ok'] and top[0]['asr']['both'] and top[0]['asr'].get('sure', True)):
                 verify(ck, it0, [t for t in takes if 'asr' not in t], is_kana)
             if is_kana:
                 rounds = [lambda: (more(text, 4), [more(tx, 2) for tx in alts]),
@@ -482,10 +499,12 @@ def main():
                 rounds = [lambda: (more(text, 3), [more(tx, 2) for tx in dot]),
                           lambda: more(it0['synth'] if ruby else kata(text) if kata(text) != text else hira(text), 3, rb=[])]   # 한자 단어는 가나로, 가나 단어는 가타카나(가타카나 단어는 히라가나)로
             else:
-                kana_in = it0['kana'] or it0['synth']
-                rounds = [lambda: more(text, 3)] + ([lambda: more(kana_in, 2, rb=[])] if kana_in != text else [])
+                # 한 글자 한자를 가나로 바꿔 넣은 문장은 조사 は를 ハ로 읽는 일이 있어(かれはやさしい → "카레하"), 한자 그대로 넣은 입력도 만들어 봄
+                kana_in, surf_in = it0['kana'] or it0['synth'], it0['synth']
+                rounds = [lambda: more(text, 3)] + ([lambda: more(surf_in, 4, rb=[])] if surf_in != text else []) + \
+                         ([lambda: more(kana_in, 2, rb=[])] if kana_in not in (text, surf_in) else [])
             for step in rounds:
-                if any(t.get('asr', {}).get('ok') for t in takes): break
+                if any(t.get('asr', {}).get('ok') and t['asr'].get('sure', True) for t in takes): break   # 확실히 맞은 후보가 생길 때까지
                 step()
                 verify(ck, it0, [t for t in takes if 'asr' not in t], is_kana)
             best = pick(kind, takes); asr = dict(best['asr'])
