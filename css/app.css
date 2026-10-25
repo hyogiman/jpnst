@@ -168,6 +168,11 @@ a.btn { text-decoration: none; }
 .audio-btn.big svg { width: 40px; height: 40px; }
 .audio-btn.slow { background: var(--card-2); color: var(--ink-2); }
 .audio-btn.playing { animation: pulse 1s ease-in-out infinite; }
+/* 다른 목소리로 듣기 */
+.voice-btn { display: inline-flex; align-items: center; gap: 6px; align-self: center; margin: 2px auto 0; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--ruri); font: 600 13px/1.2 var(--font-body); white-space: nowrap; }
+.voice-btn svg { width: 15px; height: 15px; flex: none; }
+.voice-btn.playing { border-color: var(--ruri); background: var(--ruri-soft); }
+.q-prompt .voice-btn, .lcard .voice-btn, .sheet .voice-btn { display: flex; }
 @keyframes pulse { 50% { transform: scale(1.06); } }
 
 .banner { border-radius: 12px; padding: 12px 14px; background: var(--gold-soft); color: var(--ink); font-size: 14px; border: 1px solid color-mix(in srgb, var(--gold) 35%, transparent); }
@@ -250,7 +255,7 @@ a.btn { text-decoration: none; }
 .sheet .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); margin: 0 auto 12px; }
 .sheet h2 { font-family: var(--font-display); font-size: 22px; font-weight: 400; margin: 4px 0; }
 .kchips { display: flex; flex-wrap: wrap; gap: 6px; }
-.kchips span { font-family: var(--font-jp); font-weight: 600; font-size: 20px; min-width: 38px; text-align: center; padding: 2px 6px; border-radius: 8px; background: var(--card-2); }
+.kchips span, .kchips button { font-family: var(--font-jp); font-weight: 600; font-size: 20px; min-width: 38px; text-align: center; padding: 2px 6px; border-radius: 8px; background: var(--card-2); border: 0; color: var(--ink); }
 .list-plain { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .list-plain li { display: flex; gap: 8px; align-items: baseline; font-size: 14px; }
 .list-plain li .jp { font-size: 16px; }
@@ -471,6 +476,34 @@ a.btn { text-decoration: none; }
 .kcell.nolearn .c { color: var(--muted); }
 
 canvas.pad { width: 100%; max-width: 300px; aspect-ratio: 1; border-radius: 16px; border: 2px dashed var(--line); background: var(--card); touch-action: none; align-self: center; }
+
+/* ---------- 학습 노트 ---------- */
+.seg.wide { display: flex; width: 100%; }
+.seg.wide button { flex: 1; padding: 8px 6px; white-space: nowrap; }
+.day-h { font-size: 13px; font-weight: 700; color: var(--ink-2); margin: 12px 0 0; padding-top: 6px; }
+.day-h .tabnum { color: var(--ruri); }
+details.gitem.note summary { align-items: center; }
+details.gitem.note .nt { font-weight: 700; font-size: 16px; line-height: 1.4; }
+.note-body p { margin: 0 0 10px; line-height: 1.85; font-size: 15px; }
+/* 문법 자세히: 왜 그럴까 · 예문 더 보기 · 비교·주의 · 애니에서는 */
+.gsec { border-top: 1px solid var(--line); padding-top: 12px; margin-top: 4px; display: flex; flex-direction: column; gap: 6px; }
+.gsec-h { font-size: 13px; font-weight: 800; letter-spacing: .03em; color: var(--ruri); }
+.gsec.why .gsec-h { color: var(--shu); }
+.gsec.anime .gsec-h { color: var(--ink-2); }
+.gram-d p { margin: 0 0 10px; }
+.gram-d p:last-child { margin-bottom: 0; }
+.gram-d table.gtab { border-collapse: collapse; width: 100%; font-size: 13.5px; margin: 4px 0 10px; }
+.gram-d table.gtab th, .gram-d table.gtab td { border: 1px solid var(--line); padding: 6px 6px; text-align: left; vertical-align: top; word-break: keep-all; overflow-wrap: break-word; }
+.gram-d table.gtab th { background: var(--card-2); font-weight: 700; }
+.gram-d table.gtab th:first-child, .gram-d table.gtab td:first-child { white-space: nowrap; }
+.gram-d .jp, .gram-d table.gtab .jp { font-family: var(--font-jp); }
+.ex .note { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+/* 지난 화 다시 읽기 */
+.sheet.tall { max-height: 94%; }
+.rv-sec { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.rv-sec.note-card { border-radius: 0; border-width: 1px 0 0; padding: 12px 0 0; }
+.rv-gram { display: flex; flex-direction: column; gap: 10px; padding: 8px 0 14px; }
+.rv-gram + .rv-gram { border-top: 1px dashed var(--line); padding-top: 14px; }
 
 /* ---------- 단어장 ---------- */
 .search { width: 100%; border: 1px solid var(--line); background: var(--card); border-radius: 12px; padding: 12px 14px; font-size: 16px; color: var(--ink); }

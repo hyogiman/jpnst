@@ -52,8 +52,14 @@ for (let d = 1; d <= JP.totalDays; d++) {
     });
   }
 }
-// 목소리 고르기(설정)용: 장면 대화를 뺀 모든 항목을 네 목소리로 하나씩 더 (키: 'Despina|문장' 등, base = 섞어 듣기용 키)
-[...out.values()].filter(x => x.kind !== 'dlg').forEach(x => JP.SPEAKERS.forEach(([v]) => {
+// 문법 자세히 보기의 '예문 더 보기': 섞어 듣기용 한 목소리만 (앱 용량 때문에 목소리 고르기용은 만들지 않음)
+// 다른 항목(단어·예문)과 글자가 같으면 그 녹음을 같이 쓰도록 맨 나중에 넣음 — 먼저 넣으면 그 단어의 목소리 고르기용 녹음이 빠짐
+for (let d = 1; d <= JP.totalDays; d++) {
+  const D = JP.days[d];
+  if (D && D.type === 'lesson') D.gram.forEach(g => (g.more || []).forEach(s => add(s.plain, { pack: D.ch, kind: 'more', kana: s.kana, toks: toks(s), g: gInput(s) })));
+}
+// 목소리 고르기(설정)용: 장면 대화·추가 예문을 뺀 모든 항목을 네 목소리로 하나씩 더 (키: 'Despina|문장' 등, base = 섞어 듣기용 키)
+[...out.values()].filter(x => x.kind !== 'dlg' && x.kind !== 'more').forEach(x => JP.SPEAKERS.forEach(([v]) => {
   const key = JP.audioKey(x.key.slice(x.key.indexOf('|') + 1), v);
   out.set(key, Object.assign({}, x, { key, hash: JP.audioHash(key), voice: v, base: x.key }));
 }));

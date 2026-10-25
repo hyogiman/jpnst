@@ -1,5 +1,5 @@
 /* アニ耳 — 화면과 상호작용
- * 탭: 코스(스탬프 카드) · 복습(SRS) · 문자표 · 단어장 · 나(통계·배지·설정)
+ * 탭: 코스(스탬프 카드) · 복습(SRS) · 문자표 · 노트(단어·문법·대사·인문학 모아 보기) · 나(통계·배지·설정)
  * 러너: 한 화 = 인트로 → 워밍업 복습 → 새로 배우기 → 연습 → 애니 대사 → 인문학 → 오늘의 평가 → 결과
  */
 (function () {
@@ -158,6 +158,18 @@
     opts = opts || {};
     return '<button class="audio-btn ' + (opts.big ? 'big' : '') + (opts.slow ? ' slow' : '') + '" data-act="say" data-t="' + esc(text) + '" data-r="' + (opts.rate || 1) + '" aria-label="' + (opts.slow ? '천천히 듣기' : '듣기') + '">' + (opts.slow ? '<span class="small" style="font-weight:700">0.7</span>' : I.speaker) + '</button>';
   }
+  // 다른 목소리로 듣기: 네 목소리 녹음이 있는 말만. 누를 때마다 다음 목소리로 재생하고 그 이름을 보여 줌
+  // (방금 기본으로 들은 녹음과 같은 목소리는 건너뜀 — 녹음이 같으면 색인의 위치도 같음)
+  function voiceList(text) {
+    if (!text || !SP.useClips() || !JP.SPEAKERS) return [];
+    var E = JP.clips.entry, same = function (a, b) { return !!(a && b && a[0] === b[0] && a[1] === b[1] && a[2] === b[2]); };
+    var pick = st().settings.speaker, base = E(JP.audioKey(text, pick || 'f'));
+    return JP.SPEAKERS.map(function (s) { return s[0]; }).filter(function (v) { var e = E(JP.audioKey(text, v)); return e && !same(e, base); });
+  }
+  function voiceBtn(text, rate) {
+    if (voiceList(text).length < 2) return '';
+    return '<button class="voice-btn" data-act="sayVoice" data-t="' + esc(text) + '" data-r="' + (rate || 1) + '" data-i="-1" aria-label="다른 목소리로 듣기">' + I.cycle + '<span>다른 목소리</span></button>';
+  }
   // 대화 재생: 화자마다 목소리(또는 음높이)를 다르게
   function playDialog(lines, rate, onLine) {
     var i = 0, speakers = [];
@@ -185,7 +197,7 @@
   }
   function renderTabs() {
     var due = SRS.due().length;
-    var tabs = [['home', I.route, '코스'], ['review', I.cycle, '복습'], ['kana', I.grid, '문자표'], ['book', I.book, '단어장'], ['me', I.user, '나']];
+    var tabs = [['home', I.route, '코스'], ['review', I.cycle, '복습'], ['kana', I.grid, '문자표'], ['book', I.book, '노트'], ['me', I.user, '나']];
     return '<nav class="tabbar" aria-label="메뉴"><div class="in">' + tabs.map(function (t) {
       return '<button class="tab ' + (ui.tab === t[0] ? 'on' : '') + '" data-act="tab" data-v="' + t[0] + '">' + t[1] + '<span>' + t[2] + '</span>' +
         (t[0] === 'review' && due ? '<span class="dot tabnum">' + (due > 99 ? '99+' : due) + '</span>' : '') + '</button>';
@@ -302,10 +314,26 @@
     if (lock) body += '<div class="banner" style="margin:10px 0"><b>잠겨 있어요.</b> 이전 화의 평가를 70점 이상으로 통과하면 열립니다. (설정의 "체험 모드"로 모든 화를 미리 볼 수 있어요.)</div>';
     else {
       body += '<div class="stack" style="margin-top:12px"><button class="btn block" data-act="start" data-day="' + day + '">' + I.play + (p ? ' 처음부터 다시 하기' : ' 시작하기') + '</button>';
+      if ((p || st().settings.unlockAll) && D.type === 'lesson') body += '<button class="btn ghost block" data-act="dayReview" data-day="' + day + '">' + I.book + ' 이 화 내용 다시 읽기</button>';
       if (p && D.type === 'lesson') body += '<button class="btn ghost block" data-act="start" data-day="' + day + '" data-mode="testOnly">평가만 다시 보기</button>';
       body += '</div>';
     }
     showOverlay('<div class="overlay" role="dialog" aria-modal="true" aria-label="' + day + '화 정보"><div class="scrim" data-act="closeOverlay"></div><div class="sheet">' + body + '</div></div>');
+  }
+  // 지난 화 다시 읽기: 그 화의 문법(자세히)·단어·애니 대사·장면 대화·인문학을 한 화면에
+  function openDayReview(day) {
+    var D = JP.days[day], ch = C.chapterOf(day);
+    var b = '<div class="grab"></div><div class="row" style="justify-content:space-between"><span class="ep-no">第' + day + '話 · ' + esc(ch.jp) + '</span><button class="icon-btn" data-act="closeOverlay" aria-label="닫기">' + I.close + '</button></div>' +
+      '<h2>' + esc(D.title) + '</h2><p class="muted" style="margin:0 0 4px">' + esc(D.sub) + '</p>';
+    if (D.tip) b += '<div class="mn">' + esc(D.tip) + '</div>';
+    if (D.kana.length) b += '<div class="rv-sec"><div class="eyebrow">새 글자</div><div class="kchips" style="margin-top:6px">' + D.kana.map(function (k) { return '<button data-act="say" data-t="' + esc(k.c) + '" aria-label="' + esc(k.c) + ' 듣기">' + k.c + '</button>'; }).join('') + '</div></div>';
+    if (D.gram.length) b += '<div class="rv-sec"><div class="eyebrow">문법 · 표현</div>' + D.gram.map(function (g) { return '<div class="rv-gram">' + gramHtml(g) + '</div>'; }).join('') + '</div>';
+    if (D.vocab.length) b += '<div class="rv-sec"><div class="eyebrow">단어</div>' + D.vocab.map(itemRow).join('') + '</div>';
+    if (D.line) b += '<div class="rv-sec"><div class="eyebrow">오늘의 애니 대사</div>' + exHtml(D.line.s) + (D.line.n ? '<div class="small muted">' + esc(D.line.n) + '</div>' : '') + '</div>';
+    if (D.dlg) b += '<div class="rv-sec"><div class="eyebrow">장면 대화</div>' + dialogHtml(D.dlg.lines, 'all') + '<button class="btn sm ghost" data-act="playDlg" data-day="' + day + '">' + I.play + ' 전체 재생</button></div>';
+    if (D.note) b += '<div class="rv-sec note-card"><div class="eyebrow">人文学のひとさじ · 인문학 한 스푼</div><h3>' + esc(D.note[0]) + '</h3>' + noteHtml(D.note) + '</div>';
+    b += '<button class="btn ghost block" data-act="closeOverlay">닫기</button>';
+    showOverlay('<div class="overlay" role="dialog" aria-modal="true" aria-label="' + day + '화 다시 읽기"><div class="scrim" data-act="closeOverlay"></div><div class="sheet tall">' + b + '</div></div>');
   }
   function showOverlay(html) { document.getElementById('overlay').innerHTML = html; }
   function closeOverlay() { document.getElementById('overlay').innerHTML = ''; }
@@ -387,7 +415,7 @@
   }
   function kanaDetailHtml(k, inCard) {
     var ex = kanaExample(k);
-    var h = '<div class="glyph-wrap"><span class="glyph">' + k.c + '</span><div class="stack" style="align-items:center;gap:8px"><span class="glyph-ro">' + k.ro + '</span>' + audioBtn(k.c) + audioBtn(k.c, { slow: true, rate: 0.6 }) + '</div></div>';
+    var h = '<div class="glyph-wrap"><span class="glyph">' + k.c + '</span><div class="stack" style="align-items:center;gap:8px"><span class="glyph-ro">' + k.ro + '</span>' + audioBtn(k.c) + audioBtn(k.c, { slow: true, rate: 0.6 }) + '</div></div>' + voiceBtn(k.c);
     if (k.mn) h += '<div class="mn"><b>기억법</b> · ' + esc(k.mn) + '</div>';
     if (k.origin) h += '<div class="origin"><span class="oj">' + k.origin + '</span><span>이 글자는 한자 <b>' + k.origin + '</b>(' + esc(k.hun) + ')에서 왔어요.</span></div>';
     if (k.group === 'daku') h += '<div class="mn">탁점(゛)은 목청을 울리는 소리, 반탁점(゜)은 p 소리를 만듭니다.</div>';
@@ -431,16 +459,31 @@
     });
   }
 
-  /* ================= 단어장 ================= */
+  /* ================= 학습 노트 (단어 · 문법 · 대사 · 인문학) ================= */
+  // 문법 한 항목 전체: 핵심 설명 → 예문 → 왜 그럴까 → 예문 더 보기 → 비교·주의 → 애니에서는
+  function paras(t) { return String(t).split('\n\n').map(function (p) { return '<p>' + p + '</p>'; }).join(''); }
+  function gramHtml(g, noTitle) {
+    var h = noTitle ? '' : '<div class="gram-title">' + esc(g.t) + '</div><div class="gram-m">' + esc(g.m) + '</div>';
+    h += '<div class="gram-d">' + g.d + '</div>';
+    if (g.x.length) h += '<div>' + g.x.map(exHtml).join('') + '</div>';
+    if (g.why) h += '<div class="gsec why"><div class="gsec-h">왜 그럴까?</div><div class="gram-d">' + paras(g.why) + '</div></div>';
+    if (g.more && g.more.length) h += '<div class="gsec"><div class="gsec-h">예문 더 보기</div>' + g.more.map(exHtml).join('') + '</div>';
+    if (g.vs) h += '<div class="gsec vs"><div class="gsec-h">비교 · 주의</div><div class="gram-d">' + paras(g.vs) + '</div></div>';
+    if (g.anime) h += '<div class="gsec anime"><div class="gsec-h">애니에서는</div><div class="gram-d">' + paras(g.anime) + '</div></div>';
+    return h;
+  }
+  function noteHtml(n) { return n[1].split('\n\n').map(function (p) { return '<p>' + esc(p) + '</p>'; }).join(''); }
   function viewBook() {
     var q = ui.bookQuery.trim().toLowerCase(), all = ui.bookAll || st().settings.unlockAll;
-    var tabs = [['vocab', '단어'], ['gram', '문법'], ['line', '대사·대화']];
-    var html = '<div class="sec-title"><h2>단어장</h2><div class="seg">' + tabs.map(function (t) { return '<button class="' + (ui.bookTab === t[0] ? 'on' : '') + '" data-act="bookTab" data-v="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div></div>';
-    html += '<input class="search" id="bookSearch" type="search" placeholder="일본어·한자·뜻으로 검색" value="' + esc(ui.bookQuery) + '" data-input="bookSearch" autocomplete="off">';
+    var tabs = [['vocab', '단어'], ['gram', '문법'], ['line', '대사'], ['note', '인문학']];
+    var html = '<div class="sec-title"><h2>학습 노트</h2><span class="jp">ノート</span></div>' +
+      '<div class="seg wide" role="tablist">' + tabs.map(function (t) { return '<button class="' + (ui.bookTab === t[0] ? 'on' : '') + '" data-act="bookTab" data-v="' + t[0] + '" role="tab" aria-selected="' + (ui.bookTab === t[0]) + '">' + t[1] + '</button>'; }).join('') + '</div>';
+    html += '<input class="search" id="bookSearch" type="search" placeholder="' + (ui.bookTab === 'note' ? '제목·내용으로 검색' : '일본어·한자·뜻으로 검색') + '" value="' + esc(ui.bookQuery) + '" data-input="bookSearch" autocomplete="off">';
     html += '<div class="row" style="justify-content:space-between"><span class="small muted">' + (all ? '전체 코스 미리보기' : '지금까지 배운 것만 표시') + '</span><button class="switch ' + (all ? 'on' : '') + '" data-act="bookAll" role="switch" aria-checked="' + all + '" aria-label="전체 보기"></button></div>';
     var learnedDay = function (it) { return all || isDone(it.day) || !!SRS.get(it.id); };
-    var out = '', lastCh = 0, count = 0;
+    var out = '', lastCh = 0, lastDay = 0, count = 0;
     function head(it) { var h = ''; if (it.ch !== lastCh) { lastCh = it.ch; var c = JP.sortedChapters[it.ch - 1]; h = '<div class="group-h">第' + c.n + '章 ' + esc(c.title) + '</div>'; } return h; }
+    function dayHead(day) { if (day === lastDay) return ''; lastDay = day; return '<div class="day-h"><span class="tabnum">第' + day + '話</span> ' + esc(JP.days[day].title) + '</div>'; }
     if (ui.bookTab === 'vocab') {
       JP.all.vocab.forEach(function (v) {
         if (!learnedDay(v)) return;
@@ -451,11 +494,18 @@
     } else if (ui.bookTab === 'gram') {
       JP.all.gram.forEach(function (g) {
         if (!learnedDay(g)) return;
-        if (q && (g.t + ' ' + g.m + ' ' + g.d).toLowerCase().indexOf(q) < 0) return;
+        if (q && (g.t + ' ' + g.m + ' ' + g.d + ' ' + (g.why || '') + ' ' + (g.vs || '') + ' ' + g.x.concat(g.more || []).map(function (s) { return s.plain + ' ' + s.kana + ' ' + s.ko; }).join(' ')).toLowerCase().indexOf(q) < 0) return;
         count++;
-        out += head(g) + '<details class="gitem"><summary><span class="jp">' + esc(g.t) + '</span><span class="small muted">' + esc(g.m) + '</span></summary>' +
-          '<div class="gram-d">' + g.d + '</div>' + g.x.map(exHtml).join('') + '</details>';
+        out += head(g) + dayHead(g.day) + '<details class="gitem"' + (q ? ' open' : '') + '><summary><span class="jp">' + esc(g.t) + '</span><span class="small muted">' + esc(g.m) + '</span></summary>' + gramHtml(g, true) + '</details>';
       });
+    } else if (ui.bookTab === 'note') {
+      for (var d = 1; d <= JP.totalDays; d++) {
+        var D = JP.days[d];
+        if (!D || !D.note || !(all || isDone(d))) continue;
+        if (q && (D.note[0] + ' ' + D.note[1]).toLowerCase().indexOf(q) < 0) continue;
+        count++;
+        out += head(D) + '<details class="gitem note"' + (q ? ' open' : '') + '><summary><span class="small muted tabnum">第' + d + '話</span><span class="nt">' + esc(D.note[0]) + '</span></summary><div class="note-body">' + noteHtml(D.note) + '</div></details>';
+      }
     } else {
       JP.all.line.forEach(function (l) {
         if (!learnedDay(l)) return;
@@ -470,7 +520,7 @@
     return html;
   }
   function exHtml(s) {
-    return '<div class="ex"><div class="txt"><div class="jp">' + s.html + '</div>' + (st().settings.furigana ? '' : '<div class="kana">' + esc(s.kana) + '</div>') + '<div class="ko">' + esc(s.ko) + '</div></div>' + audioBtn(s.plain) + '</div>';
+    return '<div class="ex"><div class="txt"><div class="jp">' + s.html + '</div>' + (st().settings.furigana ? '' : '<div class="kana">' + esc(s.kana) + '</div>') + '<div class="ko">' + esc(s.ko) + '</div>' + (s.note ? '<div class="note">' + esc(s.note) + '</div>' : '') + '</div>' + audioBtn(s.plain) + '</div>';
   }
   function dialogHtml(lines, mode, now) {
     var whos = [];
@@ -584,7 +634,7 @@
     return '<div class="sec-title"><h2>설정</h2><span class="jp">せってい</span></div><section class="card">' +
       (window.JP_APP ? '' : '<div class="set-row"><div><div class="l">음성 방식</div><div class="d">녹음 음성(구글 최신 음성, 목소리 4개)은 어떤 휴대폰·브라우저에서도 같은 소리로 나옵니다</div></div><div class="seg">' + [['clips', '녹음 음성'], ['device', '기기 음성']].map(function (o) { return '<button class="' + ((s.engine || 'clips') === o[0] ? 'on' : '') + '" data-act="setEngine" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join('') + '</div></div>' +
       (s.engine === 'device' ? '<div class="set-row"><div><div class="l">기기 일본어 음성</div><div class="d">' + (SP.deviceHasJa() ? '설치된 일본어 음성 ' + SP.voices.length + '개' : '이 기기·브라우저에서 일본어 음성을 찾지 못했어요') + '</div></div>' + (vopts ? '<select id="voiceSel" data-input="voice">' + vopts + '</select>' : '') + '</div>' : '')) +
-      (SP.useClips() ? '<div class="set-row"><div><div class="l">목소리</div><div class="d">섞어 듣기는 네 목소리를 고루 들려줘요. 하나를 고르면 장면 대화(인물마다 목소리 고정)를 뺀 모든 음성이 그 목소리로 나와요</div></div><select data-input="speaker" aria-label="목소리">' +
+      (SP.useClips() ? '<div class="set-row"><div><div class="l">목소리</div><div class="d">섞어 듣기는 네 목소리를 고루 들려줘요. 하나를 고르면 장면 대화(인물마다 목소리 고정)와 문법의 "예문 더 보기"를 뺀 모든 음성이 그 목소리로 나와요. 문제·카드의 "다른 목소리"로 그때그때 바꿔 들을 수도 있어요</div></div><select data-input="speaker" aria-label="목소리">' +
         [['', '섞어 듣기 (추천)']].concat(JP.SPEAKERS.map(function (v) { return [v[0], v[0] + ' (' + v[1] + ')']; })).map(function (o) { return '<option value="' + o[0] + '"' + ((s.speaker || '') === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></div>' : '') +
       '<div class="set-row"><div><div class="l">말하기 속도</div><div class="d">기본 속도 <span class="tabnum" id="rateVal">' + s.rate.toFixed(2) + '</span>배</div></div><input id="rateRange" type="range" min="0.6" max="1.3" step="0.05" value="' + s.rate + '" data-input="rate"></div>' +
       '<div class="set-row"><div class="l">음성 테스트</div>' + audioBtn('アニメを字幕なしで楽しめるように、毎日少しずつ頑張りましょう。') + '</div>' +
@@ -759,12 +809,10 @@
         body = '<div class="lcard"><div class="kind">새 단어</div><div class="vocab-main"><div class="r">' + esc(v.r) + '</div>' + (v.w && v.w !== v.r ? '<div class="w">' + esc(v.w) + '</div>' : '') +
           (JP.romajiOn(v) ? '<div class="ro">' + esc(v.ro || C.romaji(v.r)) + '</div>' : '') + '<div class="m">' + esc(v.m) + '</div></div>' +
           (v.h ? '<div class="hint">' + esc(v.h) + '</div>' : '') +
-          '<div class="row" style="justify-content:center">' + audioBtn(v.r) + audioBtn(v.r, { slow: true, rate: 0.6 }) + '</div></div>';
+          '<div class="row" style="justify-content:center">' + audioBtn(v.r) + audioBtn(v.r, { slow: true, rate: 0.6 }) + '</div>' + voiceBtn(v.r) + '</div>';
         after = function () { say(v.r); };
       } else if (c.t === 'gram') {
-        var g = c.g;
-        body = '<div class="lcard"><div class="kind">문법 · 표현</div><div class="gram-title">' + esc(g.t) + '</div><div class="gram-m">' + esc(g.m) + '</div><div class="gram-d">' + g.d + '</div>' +
-          (g.x.length ? '<div>' + g.x.map(exHtml).join('') + '</div>' : '') + '</div>';
+        body = '<div class="lcard"><div class="kind">문법 · 표현</div>' + gramHtml(c.g) + '</div>';
       } else if (c.t === 'confuse') {
         body = '<div class="lcard"><div class="kind">헷갈리는 글자 비교</div><p class="small muted" style="margin:0">나란히 놓고 다른 점을 찾아보세요. 글자를 누르면 소리가 나요.</p>' +
           c.groups.map(function (gr) { return '<div class="kgrid" style="grid-template-columns:repeat(' + gr.length + ',1fr)">' + gr.split('').map(function (ch) { return kcell(ch); }).join('') + '</div>'; }).join('') + '</div>';
@@ -889,6 +937,7 @@
       body += '<div id="qDlg" style="width:100%;text-align:left">' + dialogHtml(p.dialog, noVoice ? 'jp' : 'none') + '</div><button class="btn ghost sm" data-act="replayDlg">' + I.play + ' 다시 듣기</button>';
     } else if (p.audio) {
       body += '<div class="row" style="justify-content:center">' + audioBtn(p.audio, { big: true, rate: q.rate || 1 }) + audioBtn(p.audio, { slow: true, rate: 0.6 }) + '</div>' +
+        voiceBtn(p.audio, q.rate || 1) +
         (noVoice ? '<div class="q-small">(음성 없음) <span class="jp">' + esc(p.audio) + '</span></div>' : '');
     } else if (p.big) {
       body += '<div class="' + p.cls + '">' + esc(p.big) + '</div>';
@@ -897,7 +946,7 @@
         if (p.small) body += '<div class="q-small jp">' + esc(p.small) + '</div>';
         if (p.ro) body += '<div class="q-small">' + esc(p.ro) + '</div>';
       }
-      if (p.audioBtn) body += audioBtn(p.audioBtn);
+      if (p.audioBtn) body += audioBtn(p.audioBtn) + voiceBtn(p.audioBtn);
     } else if (p.html) {
       body += '<div class="q-sent">' + p.html + '</div>';
       if (p.ko) body += '<div class="q-ko">' + esc(p.ko) + '</div>';
@@ -982,7 +1031,7 @@
     if (!rv) return '';
     if (rv.dialog) return dialogHtml(rv.dialog, 'all');
     if (rv.html) return '<div class="reveal"><div class="txt"><div class="jp">' + rv.html + '</div><div class="kana">' + esc(rv.kana) + '</div><div class="ko">' + esc(rv.ko) + '</div></div>' + audioBtn(rv.audio) + '</div>';
-    return '<div class="reveal"><div class="txt"><div class="jp" style="font-size:24px">' + esc(rv.big) + (rv.kanji ? ' <span style="font-size:20px;color:var(--ink-2)">' + esc(rv.kanji) + '</span>' : '') + (rv.sub ? ' <span class="small muted" style="font-family:var(--font-body)">' + esc(rv.sub) + '</span>' : '') + '</div>' + (rv.ko ? '<div class="ko">' + esc(rv.ko) + '</div>' : '') + (rv.note ? '<div class="small muted">' + esc(rv.note) + '</div>' : '') + (rv.hint ? '<div class="small muted">' + esc(rv.hint) + '</div>' : '') + '</div>' + (rv.audio ? audioBtn(rv.audio) : '') + '</div>';
+    return '<div class="reveal"><div class="txt"><div class="jp" style="font-size:24px">' + esc(rv.big) + (rv.kanji ? ' <span style="font-size:20px;color:var(--ink-2)">' + esc(rv.kanji) + '</span>' : '') + (rv.sub ? ' <span class="small muted" style="font-family:var(--font-body)">' + esc(rv.sub) + '</span>' : '') + '</div>' + (rv.ko ? '<div class="ko">' + esc(rv.ko) + '</div>' : '') + (rv.note ? '<div class="small muted">' + esc(rv.note) + '</div>' : '') + (rv.hint ? '<div class="small muted">' + esc(rv.hint) + '</div>' : '') + '</div>' + (rv.audio ? '<div class="stack" style="align-items:center;gap:6px">' + audioBtn(rv.audio) + voiceBtn(rv.audio).replace('<span>다른 목소리</span>', '<span>목소리</span>') + '</div>' : '') + '</div>';
   }
   var PRAISE = ['정답!', '좋아요!', '완벽해요!', 'すごい!', 'その調子!'];
   function showFeedback(q, ok) {
@@ -1129,10 +1178,21 @@
     },
     onboard: function () { st().onboarded = true; save(); render(); },
     say: function (el) { say(el.dataset.t, +el.dataset.r || 1, el.classList.contains('audio-btn') ? el : null); },
+    sayVoice: function (el) {
+      var vs = voiceList(el.dataset.t); if (!vs.length) return;
+      var i = (+el.dataset.i + 1) % vs.length, v = vs[i];
+      var g = (JP.SPEAKERS.filter(function (s) { return s[0] === v; })[0] || [])[1] || '';
+      el.dataset.i = i; el.querySelector('span').textContent = v + (g ? ' · ' + g : '');
+      SP.unlock();
+      if (playing) playing.classList.remove('playing');
+      el.classList.add('playing'); playing = el;
+      SP.speak(el.dataset.t, { rate: +el.dataset.r || 1, voice: v }).then(function () { el.classList.remove('playing'); });
+    },
     sayLine: function (el) { say(el.dataset.t); },
     kana: function (el) { if (run) { say(el.dataset.v); return; } openKana(el.dataset.v); },
     kanaScript: function (el) { ui.kanaScript = el.dataset.v; render(); },
     bookTab: function (el) { ui.bookTab = el.dataset.v; render(); },
+    dayReview: function (el) { openDayReview(+el.dataset.day); },
     bookAll: function () { ui.bookAll = !ui.bookAll; render(); },
     review: function (el) { startReview(el.dataset.v); },
     playDlg: function (el) {

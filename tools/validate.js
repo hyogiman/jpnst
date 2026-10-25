@@ -60,7 +60,10 @@ JP.all.dlg.forEach(dl => {
   const opts = [dl.q.a].concat(dl.q.w);
   if (opts.length !== 4 || new Set(opts).size !== 4) err(`대화 문제 보기 오류 day ${dl.day}`);
 });
+// 한자 앞의 가나를 후리가나에 한 번 더 넣은 실수 (ご飯{ごはん} → ごごはん)
+const DOUBLE_KANA = /([ぁ-ゖ])[㐀-鿿々]+\{\1/;
 allSent.forEach(([it, s]) => {
+  if (DOUBLE_KANA.test(s.markup)) warn(`후리가나에 앞 가나가 겹침: ${s.markup} (day ${it.day})`);
   if (/[{}\[\]|]/.test(s.plain)) err(`마크업 잔여 문자: ${s.markup} (day ${it.day})`);
   if (/[㐀-鿿]/.test(s.kana)) err(`후리가나 누락 한자: ${s.markup} → ${s.kana} (day ${it.day})`);
   if (!s.ko) err(`번역 없음: ${s.markup} (day ${it.day})`);
@@ -72,6 +75,36 @@ allSent.forEach(([it, s]) => {
 JP.all.gram.forEach(g => {
   if (!g.d) warn(`문법 설명 없음: ${g.t} (day ${g.day})`);
 });
+
+// 문법 자세히 보기 (JP.addGramNotes): 항목 id·제목이 맞는지, 추가 예문 마크업
+const gramById = {}; JP.all.gram.forEach(g => { gramById[g.id] = g; });
+let noteCount = 0, moreCount = 0;
+Object.keys(JP.gramNotes).forEach(id => {
+  const n = JP.gramNotes[id], g = gramById[id];
+  if (!g) return err(`문법 자세히: 없는 항목 id ${id} (${n.t})`);
+  if (n.t !== g.t) err(`문법 자세히: ${id} 제목이 다름 — 노트 "${n.t}" / 항목 "${g.t}"`);
+  if (!n.why) warn(`문법 자세히: ${id} '왜 그럴까' 없음`);
+  noteCount++;
+  (n.more || []).forEach(x => {
+    if (x.length < 2 || !x[1]) err(`추가 예문 번역 없음: ${x[0]} (${id})`);
+    if (/[\[\]|]/.test(x[0])) err(`추가 예문에는 빈칸을 쓰지 않음: ${x[0]} (${id})`);
+  });
+  g.more.forEach(s => {
+    moreCount++;
+    if (DOUBLE_KANA.test(s.markup)) warn(`추가 예문 후리가나에 앞 가나가 겹침: ${s.markup} (${id})`);
+    if (/[{}\[\]|]/.test(s.plain)) err(`추가 예문 마크업 잔여 문자: ${s.markup} (${id})`);
+    if (/[㐀-鿿]/.test(s.kana)) err(`추가 예문 후리가나 누락 한자: ${s.markup} → ${s.kana} (${id})`);
+    const dup = g.x.concat(g.more.filter(o => o !== s)).find(o => o.plain === s.plain);
+    if (dup) err(`추가 예문 중복: ${s.plain} (${id})`);
+  });
+  ['why', 'vs', 'anime'].forEach(f => {
+    const t = n[f] || '';
+    const open = (t.match(/<(b|i|br|table|tr|th|td|span)\b/g) || []).filter(x => x !== '<br').length;
+    const close = (t.match(/<\/(b|i|table|tr|th|td|span)>/g) || []).length;
+    if (open !== close) err(`문법 자세히: ${id}.${f} 태그 짝이 맞지 않음 (${open}/${close})`);
+  });
+});
+console.log('문법 자세히:', noteCount + '/' + JP.all.gram.length, '항목 · 추가 예문', moreCount);
 
 // 가나 전부 배정되었는지
 const unassigned = JP.kana.list.filter(k => !k.day);

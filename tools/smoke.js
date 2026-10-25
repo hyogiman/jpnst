@@ -66,11 +66,42 @@ const BASE = process.env.BASE || 'http://127.0.0.1:8765/index.html';
     console.log('day', d, JP_TYPE(d), '→', r);
   }
   function JP_TYPE(d) { return d % 30 === 0 ? 'exam' : d % 30 === 29 ? 'listen' : (d % 30) % 7 === 0 ? 'boss' : 'lesson'; }
-  // 복습 탭 · 문자표 · 단어장 · 나 화면 렌더
+  // 복습 탭 · 문자표 · 학습 노트 · 나 화면 렌더
   for (const t of ['review', 'kana', 'book', 'me', 'home']) {
     await page.click('[data-act="tab"][data-v="' + t + '"]');
     await page.waitForTimeout(200);
   }
+  // 학습 노트: 단어·문법·대사·인문학 칸, 문법 자세히 펼치기
+  await page.click('[data-act="tab"][data-v="book"]');
+  for (const v of ['vocab', 'gram', 'line', 'note']) {
+    await page.click('[data-act="bookTab"][data-v="' + v + '"]');
+    await page.waitForTimeout(150);
+  }
+  await page.click('[data-act="bookTab"][data-v="gram"]');
+  const notes = await page.evaluate(() => { const d = document.querySelector('details.gitem'); if (d) d.open = true; return { items: document.querySelectorAll('details.gitem').length, why: document.querySelectorAll('details.gitem .gsec').length }; });
+  console.log('notes →', JSON.stringify(notes));
+  if (!notes.items || !notes.why) errors.push('학습 노트 문법 칸이 비어 있음');
+  // 지난 화 다시 읽기 (1화 시트 → 이 화 내용 다시 읽기)
+  await page.click('[data-act="tab"][data-v="home"]');
+  await page.evaluate(() => { const c = document.querySelector('[data-act="chap"][data-v="1"]'); if (c) c.click(); });
+  await page.click('[data-act="sheet"][data-day="1"]');
+  await page.click('[data-act="dayReview"]');
+  await page.waitForTimeout(200);
+  const rv = await page.evaluate(() => document.querySelectorAll('.sheet.tall .rv-sec').length);
+  console.log('day review sections →', rv);
+  if (!rv) errors.push('이 화 내용 다시 읽기가 비어 있음');
+  await page.click('.sheet.tall [data-act="closeOverlay"]');
+  // 다른 목소리 버튼 (녹음 음성일 때만 나옴): 누르면 목소리 이름으로 바뀜
+  await page.evaluate(() => JP.app.startRun(31));
+  for (let i = 0; i < 20 && !(await page.$('.voice-btn')); i++) {
+    const btn = await page.$('#runFoot [data-act="cardNext"], #runFoot [data-act="next"]'); if (btn) await btn.click(); await page.waitForTimeout(80);
+  }
+  const vb = await page.$('.voice-btn');
+  if (vb) { await vb.click(); await page.waitForTimeout(150); console.log('voice button →', await vb.textContent()); }
+  else console.log('voice button → (기기 음성 모드라 없음)');
+  await page.evaluate(() => { const r = JP.app.state(); if (r) document.querySelector('[data-act="quit"]').click(); });
+  await page.waitForTimeout(150);
+  const q0 = await page.$('[data-act="quitYes"]'); if (q0) await q0.click();
   await page.click('[data-act="tab"][data-v="review"]');
   const due = await page.$('[data-act="review"][data-v="due"]');
   if (due) { await due.click(); await page.waitForTimeout(200); }

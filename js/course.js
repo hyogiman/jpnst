@@ -7,6 +7,10 @@
   var JP = (g.JP = g.JP || {});
   JP.chapters = JP.chapters || [];
   JP.addChapter = function (ch) { JP.chapters.push(ch); };
+  // 문법 자세히 보기: 챕터 파일 끝에서 문법 항목 id(g장_화_순서)별로 더함
+  //  { t: 제목(확인용), why: 왜 그럴까, vs: 비교·주의, anime: 애니에서는, more: [[예문 마크업, 뜻, 짧은 설명]] }
+  JP.gramNotes = JP.gramNotes || {};
+  JP.addGramNotes = function (map) { Object.keys(map).forEach(function (k) { JP.gramNotes[k] = map[k]; }); };
 
   var DAYS_PER_CHAPTER = 30;
   var LESSONS_PER_WEEK = 6;
@@ -187,6 +191,11 @@
             o: gp.o || [], day: day, ch: ch.n,
             x: (gp.x || []).map(function (x) { return parseSentence(x[0], x[1]); })
           };
+          var gn = JP.gramNotes[it.id];
+          if (gn) {
+            it.why = gn.why || ''; it.vs = gn.vs || ''; it.anime = gn.anime || '';
+            it.more = (gn.more || []).map(function (x) { var s = parseSentence(x[0], x[1]); s.note = x[2] || ''; return s; });
+          } else it.more = [];
           d.gram.push(it); items[it.id] = it; all.gram.push(it);
         });
         if (L.line) {

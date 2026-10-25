@@ -8,12 +8,14 @@
     Claude 클라우드 환경에서는 네트워크 시크릿(허용 사이트 texttospeech.googleapis.com, 헤더 X-Goog-Api-Key)으로 두고 --proxy-key
 사용법:
   node tools/audio-texts.js > /tmp/audio-texts.json
-  GOOGLE_TTS_KEY=... python3 tools/make-audio-google.py /tmp/audio-texts.json --cache /tmp/gtts-cache
+  GOOGLE_TTS_KEY=... python3 tools/make-audio-google.py /tmp/audio-texts.json --cache /tmp/gtts-cache --asr /tmp/asr-models
 필요: pip install "numpy<2" lameenc pyopenjtalk-prebuilt   (make-audio.py의 음량·압축 처리를 함께 씀)
+      --asr를 쓰면 sherpa-onnx와 음성 인식 모델 두 개도 (tools/asr_verify.py 첫머리 참고)
 
 만드는 방식
  - 목소리 4개를 섞어 씀(여러 화자의 소리에 익숙해지도록): 여성 Despina·Sulafat, 남성 Algenib·Fenrir
-   · 글자(가나): Despina 한 목소리로 통일, 0.5배속으로 또렷하게
+   · 글자(가나): Despina 한 목소리로 통일, 0.7배속으로 또렷하게
+     (0.5배속보다 오히려 잘못 읽는 일이 조금 적었음: 어려운 글자 21개 × 목소리 4개 실험에서 받아 적기가 맞은 비율 59% → 63%)
    · 단어: 네 목소리를 고르게 나눔 / 소리 구별 짝은 두 단어를 같은 목소리로
    · 예문·애니 대사: 남자 말투(おれ·お前·ぞ 등)는 남성, 여자 말투(わよ·かしら 등)는 여성, 나머지는 고르게
    · 장면 대화: 등장인물의 성별에 맞춰 인물마다 목소리 하나를 고정
@@ -28,7 +30,13 @@
    맑기는 울린 칸만 보고 재서 이런 후보가 오히려 높게 나옴(특히 남성 목소리). 모두 속삭이면 몇 번 더 만듦.
    글자는 히라가나·마침표 붙인 표기로도 2번씩 더 만들어 후보를 늘림(は·へ는 조사 わ·え로 읽힐 수 있어 히라가나 제외)
    똑같은 요청에는 똑같은 소리가 돌아올 때가 많아, 두 번째부터는 음량 값(volumeGainDb)을 0.05dB씩 바꿔 보냄
+ - 맑기만으로는 "맞게 읽었는지"를 알 수 없음: 구글 음성은 가끔 아예 다르게 읽음(예전 녹음을 받아 적어 보니 つ가 あ·え로,
+   した가 じゃ·さあ·あっ으로, こうこう가 こう로 들리는 것들이 있었음. 같은 입력도 만들 때마다 다름).
+   그래서 --asr를 주면 후보마다 앱에 넣을 최종 소리를 일본어 음성 인식
+   두 가지로 받아 적어, 기대 읽기와 맞는 후보 중에서만 고름(맑기는 그다음). 맞는 후보가 없으면 몇 번 더 만들고,
+   그래도 없으면 다른 입력(마침표 붙이기·가나로·가타카나로, 글자는 다른 속도)으로 만들어 봄
  - 앞뒤는 말소리 바로 앞(0.08초, 글자는 0.12초)·뒤(0.18초)까지만 남김(말하기 전 숨소리·잡음 제거), 96kbps MP3
+   첫소리가 약한 녹음은 숨소리 규칙에 첫 박이 잘릴 수 있어, 받아 적기가 틀리면 앞을 덜 자른 소리로 다시 검사함
  - 요청 속도: Chirp 3: HD는 기본 한도가 프로젝트당 분당 200건이라 분당 150건으로 묶어 보냄(--rpm).
    한도에 걸리면(429) 잠시 쉬었다가 이어 가고, 만든 소리는 --cache 폴더에 남아 다시 실행해도 또 요청하지 않음
 """
@@ -86,6 +94,9 @@ def bucket(s, n):
 def hira(s):
     return ''.join(chr(ord(c) - 0x60) if 'ァ' <= c <= 'ヶ' else c for c in s)
 
+def kata(s):
+    return ''.join(chr(ord(c) + 0x60) if 'ぁ' <= c <= 'ゖ' else c for c in s)
+
 _ojt = None
 def dict_reading(s):
     """사전(Open JTalk)의 기본 읽기(히라가나). 앱의 후리가나와 다르면 합성기도 다르게 읽을 수 있는 말로 봄"""
@@ -115,7 +126,7 @@ def plan(items):
         fixed = it['voice'] if it['voice'] in VOICE else None   # 목소리 고르기용 항목은 그 목소리로 (읽기·속도·횟수는 기본과 같게)
         if k == 'kana':
             # 가나만 있는 말에는 읽기 지정이 안 됨(API가 거부) → 소리가 같은 글자로 바꿔 넣음(ヲ→オ 등)
-            jobs.append((it, fixed or KANA_VOICE, KANA_FIX.get(synth, synth), [], 0.5, 4)); continue
+            jobs.append((it, fixed or KANA_VOICE, KANA_FIX.get(synth, synth), [], 0.7, 4)); continue
         if k == 'static':
             text, ruby = STATIC[synth]; jobs.append((it, fixed or KANA_VOICE, text, ruby, None, 2)); continue
         if k in ('vocab', 'pair'):
@@ -240,14 +251,17 @@ def voiced_frac(x, sr):
         if ac[0] > 0 and (ac / ac[0])[lo:hi].max() > 0.7: vo += 1
     return vo / (act[-1] - act[0] + 1)
 
-def trim(x, sr, lead=0.08, tail=0.18, maxlead=0.15):
+def trim(x, sr, lead=0.08, tail=0.18, maxlead=0.15, head=True):   # maxlead=None·head=False: 앞을 덜 자름(숨소리·짧은 소리 규칙 없이)
     """앞뒤 줄이기: 말소리 바로 앞뒤까지만 남김
     구글 음성은 말하기 전후에 작은 숨소리·잡음(최대 음량보다 35~55dB 낮음)을 넣을 때가 있고, 천천히 읽는 글자에서는
     이것이 0.6~1.4초나 돼서, 예전처럼 50dB 기준으로 자르면 1초 가까이 쉬었다가 소리가 났음.
     그래서 최대보다 30dB 낮은 소리부터를 말소리로 보고 앞 0.08초·뒤 0.18초만 여유로 남김(잦아드는 끝소리 보존).
-    말소리와 0.25초 넘게 떨어진 아주 짧은 소리(0.12초 미만)는 숨소리·딸깍 소리로 보고 뺌.
+    말소리와 0.25초 넘게 떨어진 아주 짧은 소리(0.12초 미만)는 숨소리·딸깍 소리로 보고 뺌. 단 크게 난 소리(최대보다 15dB 낮은 소리 이상)는
+    げっ·はっ 같은 짧은 감탄사일 수 있어 남김.
     또 숨소리가 30dB 기준을 살짝 넘나들며 말소리 앞에 이어 붙는 경우(최대 0.7초 늦게 시작)가 있어, 분명한 말소리(최대보다
-    20dB 낮은 소리 이상)가 시작되기 maxlead초(0.15초, 글자는 0.3초)보다 앞은 숨소리로 봄(약한 첫소리 ㅅ·ㅎ 등은 이 안에 들어옴)"""
+    20dB 낮은 소리 이상)가 시작되기 maxlead초(0.15초, 글자는 0.3초)보다 앞은 숨소리로 봄(약한 첫소리 ㅅ·ㅎ 등은 대개 이 안에 들어옴)
+    다만 첫 박이 약하게 나온 녹음(ほっとする의 ほっ, よふかし의 よ 등)은 이 규칙에 첫소리가 잘려서, --asr로 검사할 때는
+    받아 적기가 틀리면 이 규칙 없이 자른 것으로 다시 검사함(final_clip)"""
     fr = int(sr * 0.01); m = len(x) // fr
     if m == 0: return x
     e = 10 * np.log10((x[:m * fr].reshape(m, fr) ** 2).mean(1) + 1e-12)
@@ -257,11 +271,12 @@ def trim(x, sr, lead=0.08, tail=0.18, maxlead=0.15):
         if seg and k - seg[-1][1] < 15: seg[-1][1] = k + 1
         else: seg.append([k, k + 1])
     if not seg: return x
-    while len(seg) > 1 and seg[0][1] - seg[0][0] < 12 and seg[1][0] - seg[0][1] >= 25: seg.pop(0)
-    while len(seg) > 1 and seg[-1][1] - seg[-1][0] < 12 and seg[-1][0] - seg[-2][1] >= 25: seg.pop()
+    quiet = lambda s: e[s[0]:s[1]].max() < e.max() - 15
+    while head and len(seg) > 1 and seg[0][1] - seg[0][0] < 12 and seg[1][0] - seg[0][1] >= 25 and quiet(seg[0]): seg.pop(0)
+    while len(seg) > 1 and seg[-1][1] - seg[-1][0] < 12 and seg[-1][0] - seg[-2][1] >= 25 and quiet(seg[-1]): seg.pop()
     start = seg[0][0]
     loud = np.where(e > e.max() - 20)[0]
-    if len(loud): start = max(start, loud[0] - int(round(maxlead / 0.01)))
+    if len(loud) and maxlead is not None: start = max(start, loud[0] - int(round(maxlead / 0.01)))
     a = max(0, start * fr - int(lead * sr)); b = min(len(x), seg[-1][1] * fr + int(tail * sr))
     return x[a:b]
 
@@ -277,22 +292,50 @@ def choose(kind, takes):
         if kind == 'kana':
             # 글자는 모음이 성대 울림으로 또렷이 나는지(엄격한 울린 비율)를 가장 크게 봄 — 속삭이듯 나온 'ハ…'는 맑기만으로는 못 거름
             # (맑기 40처럼 튀는 값이 나오는 거의 무성음 후보가 있어 맑기는 25에서 자름)
-            pen = 0 if 0.28 <= t['dur'] <= 0.9 else 15
+            pen = 0 if 0.15 <= t['dur'] <= 0.8 else 15     # 0.7배속 한 박의 소리 길이 (0.5배속일 때는 0.28~0.9초였음)
             t['score'] = 20 * t['vf'] + 0.3 * min(h, 25) - pen
             continue
         pen = 0 if 0.75 * med <= t['dur'] <= 1.35 * med else 10
         t['score'] = 20 * t['vf'] + min(h, 25) - pen   # 단어·문장도 울린 비율을 크게 봄 (남성 목소리에서 속삭이는 후보가 맑기로는 높게 나옴)
     return max(takes, key=lambda t: t['score'])
 
+def final_clip(t, is_kana, gentle=False):
+    """앱에 넣을 최종 소리(앞뒤 자르기 + 음량 맞추기). gentle: 숨소리·짧은 소리 규칙 없이 앞을 덜 자름"""
+    ml = None if gentle else (0.30 if is_kana else 0.15)   # 천천히 읽는 글자는 첫소리가 길어 여유를 조금 더
+    return MA.finish(trim(t['x'], t['sr'], lead=0.12 if is_kana else 0.08, maxlead=ml, head=not gentle), t['sr'])
+
+def asr_rank(r):
+    """판정 결과의 순위: 맞음 > 두 인식기 모두 맞음 > 더 잘 맞힌 인식기의 박 거리 > 박 거리 합"""
+    return (r['ok'], r['both'], -r['d'], -min(r['d1'], 9) - min(r['d2'], 9))
+
+def verify(ck, it, cands, is_kana):
+    """후보마다 최종 소리를 음성 인식으로 받아 적어 판정 → t['asr'] = {ok, both, r1, r2, d, d1, d2}, t['y'] = 앱에 넣을 소리.
+    앞을 덜 자른 소리가 더 잘 맞으면(약한 첫소리가 잘렸던 것) 그쪽을 씀"""
+    clips, owner = [], []
+    for t in cands:
+        t['y'] = final_clip(t, is_kana); clips.append((t['y'], t['sr'])); owner.append((t, None))
+        g = final_clip(t, is_kana, True)
+        if len(g) - len(t['y']) > 0.03 * t['sr']: clips.append((g, t['sr'])); owner.append((t, g))
+    for (t, g), r in zip(owner, ck.check(it, clips)):
+        if g is None: t['asr'] = r
+        elif asr_rank(r) > asr_rank(t['asr']): t['asr'], t['y'], t['gentle'] = r, g, True
+
+def pick(kind, takes):
+    """받아 적기가 맞은 후보 중에서 고름(두 인식기가 다 맞힌 후보를 조금 더 높게). 다 틀리면 가장 덜 틀린 것 중 가장 맑은 것"""
+    ok = [t for t in takes if t.get('asr', {}).get('ok')]
+    choose(kind, ok or takes)
+    if ok: return max(ok, key=lambda t: t['score'] + (4 if t['asr']['both'] else 0))
+    return max(takes, key=lambda t: (asr_rank(t['asr']) if 'asr' in t else (False, False, -99), t['score']))
+
 # 녹음마다 만든 조건(목소리·입력·읽기 지정·속도·횟수·자르기 방식)의 서명을 tools/audio-manifest.json에 남겨 두고,
 # 다음에 만들 때 조건이 같으면 지금 묶음의 MP3를 그대로 다시 씀 → 캐시가 없는 새 작업 공간에서도 바뀐 항목만 요청
-TRIM_VER = 'trim-30dB-v3'
+TRIM_VER = 'trim-30dB-v4'   # 크게 난 짧은 첫소리(げっ 등)는 남김
 MANIFEST = os.path.join(ROOT, 'tools', 'audio-manifest.json')
-PICK_VER = 'pick-v3'        # 엄격한 울린 비율을 함께 보고 고르기(속삭이는 후보 거르기)
-KANA_VER = 'kana-pick-v3'   # 글자: 다른 표기 후보 더하기
-def signature(task_key):
+PICK_VER = 'pick-v4'        # 엄격한 울린 비율을 함께 보고 고르기(속삭이는 후보 거르기) + 음성 인식 검사(--asr)
+KANA_VER = 'kana-pick-v4'   # 글자: 0.7배속, 다른 표기 후보 더하기
+def signature(task_key, asr):
     voice, text, ruby_s, rate, n, is_kana = task_key
-    ver = TRIM_VER + '+' + PICK_VER + ('+' + KANA_VER if is_kana else '')
+    ver = TRIM_VER + '+' + PICK_VER + ('+asr' if asr else '') + ('+' + KANA_VER if is_kana else '')
     return hashlib.sha1(json.dumps([voice, text, ruby_s, rate, n, ver], ensure_ascii=False).encode()).hexdigest()[:12]
 def load_previous():
     """(항목 해시 → 서명, 항목 해시 → 지금 MP3 바이트를 읽는 함수)"""
@@ -312,6 +355,20 @@ def load_previous():
         return bytes(bufs[p][off:off + ln])
     return sigs, read
 
+def asr_summary(tasks, results):
+    """음성 인식 검사 결과 요약: 종류별 통과 수, 끝내 맞는 후보를 못 찾은 녹음(가장 덜 틀린 것을 씀) 목록"""
+    from collections import Counter
+    tot, ok, gentle, fails = Counter(), Counter(), 0, []
+    for k, its in tasks:
+        info = results[its[0]['hash']][2]; r = info.get('asr')
+        if not r: continue
+        kd = its[0]['kind']; tot[kd] += 1; gentle += info['gentle']
+        if r['ok']: ok[kd] += 1
+        else: fails.append('%s  [%s · 입력 %s]  인식: %s / %s' % (its[0]['key'], info['voice'], info['text'], r['r1'], r['r2']))
+    if not tot: return
+    print('음성 인식 검사: ' + ', '.join('%s %d/%d' % (kd, ok[kd], tot[kd]) for kd in tot) + ' 통과 · 앞을 덜 자른 것 %d개' % gentle, file=sys.stderr)
+    if fails: print('맞는 후보를 못 찾은 녹음 %d개 (가장 덜 틀린 것을 씀):\n  ' % len(fails) + '\n  '.join(fails), file=sys.stderr)
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('texts'); ap.add_argument('--key-file'); ap.add_argument('--cache'); ap.add_argument('--workers', type=int, default=6)
@@ -320,7 +377,13 @@ def main():
     ap.add_argument('--rpm', type=int, default=150, help='분당 요청 수 상한 (Chirp 3: HD 기본 한도는 프로젝트당 분당 200건)')
     ap.add_argument('--redo', help='이 JSON 목록(항목 키)에 있는 녹음은 이전 결과를 다시 쓰지 않고 새로 고름')
     ap.add_argument('--proxy-key', action='store_true', help='키 없이 보냄 (Claude 클라우드 환경의 네트워크 시크릿이 X-Goog-Api-Key 헤더를 붙이는 경우)')
+    ap.add_argument('--asr', help='음성 인식 모델 폴더: 후보마다 받아 적어 보고 맞게 읽은 것만 고름 (tools/asr_verify.py)')
     a = ap.parse_args()
+    ck = None
+    if a.asr:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from asr_verify import Checker
+        ck = Checker(a.asr)
     key = os.environ.get('GOOGLE_TTS_KEY') or (open(a.key_file).read().strip() if a.key_file else '')
     if not key and not a.proxy_key: sys.exit('GOOGLE_TTS_KEY 환경 변수나 --key-file(또는 --proxy-key)이 필요합니다')
     if a.cache: os.makedirs(a.cache, exist_ok=True)
@@ -343,71 +406,99 @@ def main():
     reused = [0]
     def work(task):
         (voice, text, ruby_s, rate, n, is_kana), its = task
-        # 조건이 같은 녹음이 이미 있으면 그대로 씀 (요청·다시 압축 없음)
-        sig = signature(task[0])
-        hit = next((it for it in its if prev_sigs.get(it['hash']) == sig), None) if prev_read and not any(it['key'] in redo for it in its) else None
+        # 조건이 같은 녹음이 이미 있으면 그대로 씀 (요청·다시 압축 없음). 음성 인식 검사(--asr)로 고른 녹음은 검사 없이 만들 때도 다시 씀
+        sigs = {signature(task[0], True)} | (set() if ck else {signature(task[0], False)})
+        hit = next((it for it in its if prev_sigs.get(it['hash']) in sigs), None) if prev_read and not any(it['key'] in redo for it in its) else None
         if hit:
             mp3 = prev_read(hit['hash'])
             if mp3:
                 with cl.lock: reused[0] += 1; done[0] += 1
                 return task, mp3, {'voice': voice, 'text': text, 'ruby': json.loads(ruby_s), 'hnr': None, 'dur': None, 'takes': [], 'fallback': False, 'reused': True}
         ruby = json.loads(ruby_s)
-        takes = []; fallback = None
+        takes = []; fallback = None; made = set(); alts = []
+        def add(tx, t, rb=None, rt=None):
+            """후보 하나 만들기 (rb·rt: 이 후보만 읽기 지정·속도를 다르게)"""
+            rb = ruby if rb is None else rb; rt = rate if rt is None else rt
+            x, sr = cl.synth(voice, tx, rb, rt, t)
+            made.add((tx, json.dumps(rb, ensure_ascii=False), rt, t))
+            h, vr, dur = voicing(x, sr)
+            takes.append({'x': x, 'sr': sr, 'hnr': h, 'vr': vr, 'dur': dur, 'take': t, 'text': tx, 'ruby': rb, 'rate': rt, 'vf': voiced_frac(trim(x, sr), sr)})
+        def more(tx, k, rb=None, rt=None):
+            """같은 입력으로 아직 안 만든 번호의 후보를 k개 더 (번호가 같으면 캐시를 다시 씀)"""
+            rbs, r, t = json.dumps(ruby if rb is None else rb, ensure_ascii=False), (rate if rt is None else rt), 0
+            while k > 0:
+                if (tx, rbs, r, t) not in made: add(tx, t, rb, rt); k -= 1
+                t += 1
         for t in range(n):
             try:
-                x, sr = cl.synth(voice, text, ruby, rate, t)
+                add(text, t)
             except RuntimeError as e:
                 if 'custom pronunciation' not in str(e) or not ruby: raise
                 it0 = its[0]; fallback = it0['kana'] or it0['synth']   # 거부되면 후리가나 그대로(가나 문장)
                 text, ruby = fallback, []
-                x, sr = cl.synth(voice, text, ruby, rate, t)
-            h, vr, dur = voicing(x, sr)
-            takes.append({'x': x, 'sr': sr, 'hnr': h, 'vr': vr, 'dur': dur, 'take': t, 'vf': voiced_frac(trim(x, sr), sr)})
-        best = choose('kana' if is_kana else 'x', takes)
+                add(text, t)
+        kind = 'kana' if is_kana else 'x'
+        best = choose(kind, takes)
         # 모두 흐리거나 속삭이듯 나왔으면 몇 번 더 만들어 봄 (짧은 말은 맑기 12·울린 비율 0.3(글자 0.5), 문장은 맑기 10·울린 비율 0.25 미만일 때)
         short = is_kana or len(text) <= 6
         low_v = best['vf'] < (0.5 if is_kana else 0.3 if short else 0.25)
         low_h = np.isnan(best['hnr']) or best['hnr'] < (12 if short else 10)
-        extra = (3 if short else 2) if (low_v or low_h) else 0
-        for t in range(n, n + extra):
-            x, sr = cl.synth(voice, text, ruby, rate, t)
-            h, vr, dur = voicing(x, sr)
-            takes.append({'x': x, 'sr': sr, 'hnr': h, 'vr': vr, 'dur': dur, 'take': t, 'vf': voiced_frac(trim(x, sr), sr)})
-        if extra: best = choose('kana' if is_kana else 'x', takes)
+        if low_v or low_h:
+            more(text, 3 if short else 2); best = choose(kind, takes)
         if not is_kana and best['vf'] < 0.15:
             # 그래도 거의 속삭이면(울린 비율 0.15 미만): 단어는 마침표를 붙인 입력으로 2번, 문장은 3번 더 만들어 봄
-            more = [(text + '。', t) for t in range(2)] if short and not re.search(r'[。！？!?…]$', text) else [(text, t) for t in range(n + extra, n + extra + 3)]
-            for tx, t in more:
-                x, sr = cl.synth(voice, tx, ruby, rate, t)
-                h, vr, dur = voicing(x, sr)
-                takes.append({'x': x, 'sr': sr, 'hnr': h, 'vr': vr, 'dur': dur, 'take': t, 'text': tx, 'vf': voiced_frac(trim(x, sr), sr)})
+            if short and not re.search(r'[。！？!?…]$', text): more(text + '。', 2)
+            else: more(text, 3)
             prev, best = best, choose('x', takes)
             if best['vf'] < prev['vf']: best = prev        # 더 덜 울리는 후보로는 바꾸지 않음
         if is_kana:
             # 글자는 다른 표기로도 만들어 후보를 늘림: 히라가나(は·へ는 조사 わ·え로 읽힐 수 있어 빼고), 마침표를 붙인 가타카나.
             # 같은 가타카나만 넣으면 비슷한(때로 똑같은) 소리가 반복되고, 가끔 모음까지 속삭이듯(무성음) 나오기 때문
             alts = ([hira(text)] if hira(text) != text and hira(text) not in ('は', 'へ') else []) + [text + '。']
-            for tx in alts:
-                for t in range(2):
-                    x, sr = cl.synth(voice, tx, ruby, rate, t)
-                    h, vr, dur = voicing(x, sr)
-                    takes.append({'x': x, 'sr': sr, 'hnr': h, 'vr': vr, 'dur': dur, 'take': t, 'text': tx, 'vf': voiced_frac(trim(x, sr), sr)})
+            for tx in alts: more(tx, 2)
             best = choose('kana', takes)
             if best['vf'] < 0.45:
                 # 그래도 모음이 약하면(울린 비율 0.45 미만) 가타카나로 4번, 다른 표기로 2번씩 더 만들어 봄 (더 덜 울리는 쪽으로는 안 바꿈)
-                for tx, t in [(text, t) for t in range(n + extra, n + extra + 4)] + [(tx, t) for tx in alts for t in (2, 3)]:
-                    x, sr = cl.synth(voice, tx, ruby, rate, t)
-                    h, vr, dur = voicing(x, sr)
-                    takes.append({'x': x, 'sr': sr, 'hnr': h, 'vr': vr, 'dur': dur, 'take': t, 'text': tx, 'vf': voiced_frac(trim(x, sr), sr)})
+                more(text, 4)
+                for tx in alts: more(tx, 2)
                 prev, best = best, choose('kana', takes)
                 if best['vf'] < prev['vf']: best = prev
-        y = MA.finish(trim(best['x'], best['sr'], lead=0.12 if is_kana else 0.08, maxlead=0.30 if is_kana else 0.15), best['sr'])   # 천천히 읽는 글자는 첫소리가 길어 여유를 조금 더
+        asr = None
+        if ck:
+            # 음성 인식 검사: 앱에 넣을 최종 소리를 받아 적어 기대 읽기와 맞는지 봄 (tools/asr_verify.py)
+            #  - 가장 맑은 후보부터 보고, 두 인식기가 다 맞히면 그것으로 끝. 아니면 나머지 후보도 모두 검사(글자는 처음부터 모두)
+            #  - 맞는 후보가 하나도 없으면 후보를 더 만들어 봄: 같은 입력 몇 번 더 → 다른 입력(마침표·가나·가타카나, 글자는 다른 속도)
+            it0 = its[0]
+            choose(kind, takes)
+            top = takes if is_kana else [max(takes, key=lambda t: t['score'])]
+            verify(ck, it0, top, is_kana)
+            if is_kana or not (top[0]['asr']['ok'] and top[0]['asr']['both']):
+                verify(ck, it0, [t for t in takes if 'asr' not in t], is_kana)
+            if is_kana:
+                rounds = [lambda: (more(text, 4), [more(tx, 2) for tx in alts]),
+                          lambda: [more(tx, 2, rt=r) for tx in [text] + alts[:1] for r in (0.85, 0.5)]]
+            elif it0['kind'] in ('vocab', 'pair'):
+                dot = [] if re.search(r'[。！？!?…]$', text) else [text + '。']
+                rounds = [lambda: (more(text, 3), [more(tx, 2) for tx in dot]),
+                          lambda: more(it0['synth'] if ruby else kata(text) if kata(text) != text else hira(text), 3, rb=[])]   # 한자 단어는 가나로, 가나 단어는 가타카나(가타카나 단어는 히라가나)로
+            else:
+                kana_in = it0['kana'] or it0['synth']
+                rounds = [lambda: more(text, 3)] + ([lambda: more(kana_in, 2, rb=[])] if kana_in != text else [])
+            for step in rounds:
+                if any(t.get('asr', {}).get('ok') for t in takes): break
+                step()
+                verify(ck, it0, [t for t in takes if 'asr' not in t], is_kana)
+            best = pick(kind, takes); asr = dict(best['asr'])
+            asr['n_ok'] = sum(1 for t in takes if t.get('asr', {}).get('ok'))
+        y = best['y'] if 'y' in best else final_clip(best, is_kana)
         mp3 = MA.to_mp3(y, best['sr'], kbps=96)
         with cl.lock:
             done[0] += 1
-            if done[0] % 100 == 0: print(f'{done[0]}/{len(tasks)}  (보낸 글자 {cl.chars})', file=sys.stderr, flush=True)
-        return task, mp3, {'voice': voice, 'text': best.get('text', text), 'vf': round(best['vf'], 2), 'ruby': ruby, 'hnr': round(best['hnr'], 1) if not np.isnan(best['hnr']) else None,
-                           'dur': round(best['dur'], 2), 'takes': [round(t['hnr'], 1) if not np.isnan(t['hnr']) else None for t in takes], 'fallback': bool(fallback)}
+            if done[0] % 100 == 0: print(f'{done[0]}/{len(tasks)}  (보낸 글자 {cl.chars}, API 호출 {cl.calls}번)', file=sys.stderr, flush=True)
+        return task, mp3, {'voice': voice, 'text': best['text'], 'vf': round(best['vf'], 2), 'ruby': best['ruby'], 'rate': best['rate'],
+                           'hnr': round(best['hnr'], 1) if not np.isnan(best['hnr']) else None, 'dur': round(best['dur'], 2),
+                           'takes': [round(t['hnr'], 1) if not np.isnan(t['hnr']) else None for t in takes], 'fallback': bool(fallback),
+                           'asr': asr, 'gentle': bool(best.get('gentle'))}
     with ThreadPoolExecutor(max_workers=a.workers) as ex:
         for task, mp3, info in ex.map(work, tasks):
             for it in task[1]: results[it['hash']] = (it, mp3, info)
@@ -431,6 +522,7 @@ def main():
     if a.dry:
         if a.report: json.dump(report, open(a.report, 'w'), ensure_ascii=False, indent=0)
         print('시험 실행: 앱 파일은 쓰지 않음 · API 호출 %d번, 보낸 글자 %d자' % (cl.calls, cl.chars), file=sys.stderr)
+        asr_summary(tasks, results)
         return
     os.makedirs(os.path.join(ROOT, 'audio'), exist_ok=True)
     labels = sorted(packs, key=lambda l: ('-' in l, int(l.split('-')[0]), l))   # 기본 묶음 0~6이 먼저 (서비스 워커가 pack0을 미리 받음)
@@ -453,10 +545,16 @@ def main():
         CREDIT, json.dumps([names[l] for l in labels]), base64.b64encode(MA.silent_mp3()).decode(),
         json.dumps(index, separators=(',', ':')))
     with open(os.path.join(ROOT, 'js', 'data', 'audio-index.js'), 'w', encoding='utf-8') as f: f.write(js)
-    sigs = {it['hash']: signature(k) for k, its in tasks for it in its if not results[it['hash']][2].get('fallback')}
+    sigs = {}
+    for k, its in tasks:
+        info = results[its[0]['hash']][2]
+        if info.get('fallback'): continue
+        s = prev_sigs.get(its[0]['hash']) if info.get('reused') else signature(k, info.get('asr') is not None)
+        for it in its: sigs[it['hash']] = s
     with open(MANIFEST, 'w', encoding='utf-8') as f: json.dump(dict(sorted(sigs.items())), f, separators=(',', ':'))
     if a.report: json.dump(report, open(a.report, 'w'), ensure_ascii=False, indent=0)
     print('총 %d개 클립 (만든 소리 %d개 중 그대로 다시 쓴 것 %d개, API 호출 %d번, 보낸 글자 %d자), %.1f MB' % (len(items), len(tasks), reused[0], cl.calls, cl.chars, total / 1e6), file=sys.stderr)
+    asr_summary(tasks, results)
 
 if __name__ == '__main__':
     main()
