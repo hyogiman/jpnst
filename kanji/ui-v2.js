@@ -191,5 +191,7 @@
   /* Keep navigation in the correct tab after a date change from the new planner. */
   var oldChangeDay=changeDay;
   changeDay=function(day){oldChangeDay(day)};
+  // The legacy boot rendered a hidden quiz before this UI loaded. Discard its active card.
+  activeId=null;resetTrail();resetCardUI();sessionDone.clear();
   render();
 })();
