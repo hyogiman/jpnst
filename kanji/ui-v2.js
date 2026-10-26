@@ -127,7 +127,7 @@
         '<div class="japanese-area"><div class="main-jp">'+(hint?ruby(c.src):esc(plain(c.src)))+'</div></div>'+
         '<button type="button" id="quizHintBtn" class="quiz-hint">'+(hint?'힌트 사용 중 · 빠른 복습으로 기록':'✧ 후리가나 힌트 보기')+'</button></div>'+
         '<div class="quiz-options" aria-label="읽는 법 4지선다">'+options.map(function(o,i){return '<button class="quiz-option" data-choice="'+i+'"><em>'+(i+1)+'</em><span>'+esc(o.read)+'</span></button>'}).join('')+'</div>'+
-        '<div class="quiz-footer">'+action('← 이전 문제','id="prevQuizBtn" '+(trailIndex<=0?'disabled':''),false)+action('선택해서 정답 확인','disabled',false)+'</div></section>';
+        '<div class="quiz-footer">'+action('← 이전 문제','id="prevQuizBtn" '+(trailIndex<=0?'disabled':''),false)+'</div><p class="mini-note">답을 고르면 바로 채점하고 모든 선택지의 뜻을 보여드립니다.</p></section>';
     }
     return '<section class="quiz-panel">'+
       '<div class="ui-answer '+(correct?'':'bad')+'" role="status"><div class="verdict">'+(correct?(hintUsed?'✓ 맞혔어요 · 힌트 사용':'✓ 정답이에요!'):'↻ 다시 익혀볼까요?')+'</div>'+
