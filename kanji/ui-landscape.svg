@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 230" role="img" aria-label="후지산과 벚꽃을 추상화한 풍경">
+<defs><linearGradient id="sky" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#eaf4ff"/><stop offset="1" stop-color="#f8fbff"/></linearGradient><linearGradient id="fuji" x1="0" x2=".8" y1="0" y2="1"><stop stop-color="#9fc2f0"/><stop offset="1" stop-color="#d7e6fb"/></linearGradient></defs>
+<rect width="700" height="230" fill="none"/>
+<path d="M0 168 C85 125 117 158 182 155 C266 153 312 114 388 138 C470 164 524 121 700 166 L700 230 L0 230Z" fill="#e5f0fd"/>
+<path d="M160 201 L344 19 L515 201Z" fill="url(#fuji)"/>
+<path d="M279 84 L344 19 L405 84 L369 74 L356 101 L338 85 L321 108 L311 72Z" fill="#fff"/>
+<path d="M0 204 C113 172 190 201 263 183 C370 155 424 215 529 184 C615 159 664 170 700 173 L700 230 L0 230Z" fill="#d1e4fa" opacity=".74"/>
+<path d="M560 208 V114 M540 131 H582 M546 131 L565 111 L577 131Z" fill="none" stroke="#43699e" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M522 131 Q562 110 605 131 L587 137 H541 Z" fill="#43699e"/>
+<path d="M528 157 Q563 138 599 157 L609 163 H520 Z" fill="#345c91"/>
+<path d="M534 184 Q565 164 599 184 L613 189 H518 Z" fill="#284a7c"/>
+<path d="M544 137 H584 V154 H544Z M540 164 H591 V183 H540Z" fill="#709acb"/>
+<g stroke="#c6a2b2" stroke-width="4" fill="none" opacity=".85"><path d="M700 0 Q662 68 608 84"/><path d="M685 32 Q652 15 629 26"/><path d="M678 54 Q670 80 634 106"/></g>
+<g fill="#f6b9d1" opacity=".95"><circle cx="647" cy="25" r="9"/><circle cx="664" cy="48" r="11"/><circle cx="625" cy="49" r="8"/><circle cx="604" cy="82" r="9"/><circle cx="637" cy="94" r="8"/><circle cx="687" cy="12" r="11"/><circle cx="696" cy="66" r="9"/><circle cx="579" cy="104" r="6"/></g>
+<g fill="#f3a6c7" opacity=".65"><ellipse cx="490" cy="48" rx="5" ry="9" transform="rotate(34 490 48)"/><ellipse cx="451" cy="102" rx="4" ry="8" transform="rotate(-35 451 102)"/><ellipse cx="112" cy="88" rx="5" ry="9" transform="rotate(-22 112 88)"/></g>
+</svg>
