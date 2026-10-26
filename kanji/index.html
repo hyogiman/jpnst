@@ -117,13 +117,14 @@ function quizChoices(c){if(quizOptions)return quizOptions;
  const desired=c.read, targetLen=kanaLen(desired), tail=trailingKana(c.src);
  let pool=DECK.filter(x=>x.id!==c.id&&x.read!==desired&&plain(x.src)!==plain(c.src));
  // 후리가나 없는 문제에도 보이는 가나 어미가 있다면 모든 보기의 어미를 동일하게 맞춘다.
+ const uniqueCount=list=>new Set(list.map(x=>x.read)).size;
  const endings=[tail,desired.slice(-2),desired.slice(-1)].filter(Boolean);
- const suffix=endings.find(s=>pool.filter(x=>x.read.endsWith(s)).length>=3)||'';
+ const suffix=endings.find(s=>uniqueCount(pool.filter(x=>x.read.endsWith(s)))>=3)||'';
  if(suffix)pool=pool.filter(x=>x.read.endsWith(suffix));
  // 가능한 경우 네 보기의 길이까지 맞춰 소거법으로 풀 수 없게 한다.
  let sameLength=pool.filter(x=>kanaLen(x.read)===targetLen);
- let lenRestricted=sameLength.length>=3?sameLength:pool.filter(x=>Math.abs(kanaLen(x.read)-targetLen)<=1);
- if(lenRestricted.length>=3)pool=lenRestricted;
+ let lenRestricted=uniqueCount(sameLength)>=3?sameLength:pool.filter(x=>Math.abs(kanaLen(x.read)-targetLen)<=1);
+ if(uniqueCount(lenRestricted)>=3)pool=lenRestricted;
  pool.sort((a,b)=>{
    const score=x=>editDistance(x.read,desired)*6+Math.abs(kanaLen(x.read)-targetLen)*5+(x.cat===c.cat?-1:0)+(x.read[0]===desired[0]?-2:0)+(hash(x.id+c.id+':'+(prog(c)?.seen||0))%19)/100;
    return score(a)-score(b);
