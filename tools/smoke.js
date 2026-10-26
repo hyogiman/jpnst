@@ -14,7 +14,7 @@ const BASE = process.env.BASE || 'http://127.0.0.1:8765/index.html';
   await page.waitForSelector('.today');
 
   async function playDay(day, opts = {}) {
-    await page.evaluate(d => JP.app.startRun(d), day);
+    if (day != null) await page.evaluate(d => JP.app.startRun(d), day);
     let guard = 0, result = null;
     while (guard++ < 400) {
       const info = await page.evaluate(() => {
@@ -23,7 +23,7 @@ const BASE = process.env.BASE || 'http://127.0.0.1:8765/index.html';
         return { k: s.k, qkind: q && !r.answered ? q.kind : null, answered: r.answered, hasFb: !!document.querySelector('.feedback'), res: r.res ? { score: r.res.score, pass: r.res.pass } : null };
       });
       if (info.done) break;
-      if (info.k === 'result') { result = info.res; await page.click('[data-act="endRun"]'); continue; }
+      if (info.k === 'result') { result = info.res; await page.click('#runFoot [data-act="endRun"]'); continue; }
       if (info.hasFb) { await page.click('.feedback [data-act="cont"]'); continue; }
       if (info.qkind && !info.answered) {
         const wrong = opts.wrongEvery && Math.random() < opts.wrongEvery;
@@ -38,6 +38,17 @@ const BASE = process.env.BASE || 'http://127.0.0.1:8765/index.html';
             document.querySelector('[data-act="orderCheck"]').click();
           } else if (q.kind === 'match') {
             q.pairs.forEach(p => { document.querySelector('[data-act="mL"][data-id="' + p.id + '"]').click(); document.querySelector('[data-act="mR"][data-id="' + p.id + '"]').click(); });
+          } else if (q.kind === 'input') {
+            // 정답을 로마자로 쳐서 입력 변환까지 함께 점검 (글자 소리 문제는 원래 로마자)
+            const inp = document.getElementById('ansIn');
+            inp.value = wrong ? 'zzzz' : JP.course.romaji(q.answers[0].k);
+            inp.dispatchEvent(new Event('input', { bubbles: true }));
+            window.__inputs = (window.__inputs || 0) + 1;
+            document.querySelector('[data-act="inputCheck"]').click();
+          } else if (q.kind === 'self') {
+            document.querySelector('[data-act="selfShow"]').click();
+            window.__selfs = (window.__selfs || 0) + 1;
+            document.querySelector('[data-act="selfRate"][data-v="' + (wrong ? '0' : '1') + '"]').click();
           }
         }, { wrong });
         await page.waitForTimeout(80);
@@ -54,6 +65,7 @@ const BASE = process.env.BASE || 'http://127.0.0.1:8765/index.html';
     return result;
   }
 
+  // 문제 난이도: 기본(섞어 풀기)에서 직접 입력·스스로 채점 문제가 섞여 나오는지 함께 봄
   const r1 = await playDay(1);
   console.log('day 1 →', r1);
   await page.waitForSelector('.today');
@@ -91,6 +103,23 @@ const BASE = process.env.BASE || 'http://127.0.0.1:8765/index.html';
   console.log('day review sections →', rv);
   if (!rv) errors.push('이 화 내용 다시 읽기가 비어 있음');
   await page.click('.sheet.tall [data-act="closeOverlay"]');
+  // 누적 복습: 복습 탭 카드 → 종류·난이도 → 20문항 → 한 세트 더
+  await page.click('[data-act="tab"][data-v="review"]');
+  await page.waitForTimeout(150);
+  const card = await page.evaluate(() => !!document.querySelector('.drill-card'));
+  if (!card) errors.push('누적 복습 카드가 없음');
+  for (const [kind, lv] of [['mix', 'hard'], ['gram', 'mid'], ['listen', 'hard'], ['vocab', 'easy']]) {
+    await page.click('[data-act="drillKind"][data-v="' + kind + '"]');
+    await page.click('[data-act="setLevel"][data-v="' + lv + '"]');
+    await page.click('.drill-card [data-act="drill"]');
+    const r = await playDay(null);
+    console.log('drill', kind, lv, '→', r);
+    if (!r || r.score < 100) errors.push('누적 복습(' + kind + '·' + lv + ') 정답을 다 맞혔는데 ' + (r && r.score) + '점');
+  }
+  const inputs = await page.evaluate(() => [window.__inputs || 0, window.__selfs || 0, JSON.stringify(JP.store.state.drill.sets)]);
+  console.log('직접 입력 ' + inputs[0] + '문항 · 스스로 채점 ' + inputs[1] + '문항 · 누적 복습 세트 ' + inputs[2]);
+  if (!inputs[0] || !inputs[1]) errors.push('직접 입력·스스로 채점 문제가 나오지 않음');
+  await page.evaluate(() => { JP.store.state.settings.level = 'mid'; JP.store.save(); });
   // 다른 목소리 버튼 (녹음 음성일 때만 나옴): 누르면 목소리 이름으로 바뀜
   await page.evaluate(() => JP.app.startRun(31));
   for (let i = 0; i < 20 && !(await page.$('.voice-btn')); i++) {

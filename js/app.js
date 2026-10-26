@@ -3,7 +3,7 @@
  * 러너: 한 화 = 인트로 → 워밍업 복습 → 새로 배우기 → 연습 → 애니 대사 → 인문학 → 오늘의 평가 → 결과
  */
 (function () {
-  var JP = window.JP, U = JP.U, C = JP.course, S = JP.store, SRS = JP.srs, SP = JP.speech, Q = JP.quiz;
+  var JP = window.JP, U = JP.U, C = JP.course, S = JP.store, SRS = JP.srs, SP = JP.speech, Q = JP.quiz, DR = JP.drill;
   var esc = U.esc;
 
   /* ================= 아이콘 ================= */
@@ -350,6 +350,7 @@
       '<div class="small muted" style="max-width:20ch;text-align:right">잊어버리기 직전에 다시 떠올리면 기억이 가장 오래 갑니다.</div></div>' +
       (due.length ? '<button class="btn block" data-act="review" data-v="due">' + I.play + ' 지금 복습하기 (' + Math.min(20, due.length) + '문항)</button>' : '<div class="banner">오늘 복습은 모두 끝났어요. 새 에피소드를 진행하면 복습 항목이 쌓입니다.</div>') +
       '</section>';
+    html += drillCard();
     html += '<section class="card"><div class="sec-title"><h2 style="font-size:15px">기억 단계</h2><span class="small muted">총 ' + Object.keys(s.srs).length + '개</span></div>' +
       '<p class="small muted" style="margin:4px 0 12px">맞힐 때마다 다음 단계로 올라가고, 복습 간격이 1 → 2 → 4 → 7 → 14 → 30 → 60일로 늘어납니다. 틀리면 단계가 내려가요.</p>' +
       '<div class="boxes" role="img" aria-label="기억 단계별 항목 수">' + boxes.map(function (n, i) {
@@ -363,6 +364,31 @@
       html += '<section class="card row"><div style="flex:1"><b>무작위 청해 연습</b><div class="small muted">지금까지 배운 것 중에서 듣기 문제 15개</div></div><button class="btn sm" data-act="review" data-v="listen">' + I.headphones + '</button></section>';
     }
     return html;
+  }
+  // 누적 복습 카드: 지금까지 배운 것 전체에서 20문항씩, 끝없이
+  var DRILL_KIND = { mix: '골고루', vocab: '단어', gram: '문법·예문', listen: '듣기' };
+  var LEVELS = [['easy', '보기 고르기'], ['mid', '섞어 풀기'], ['hard', '주관식']];
+  function levelSeg() {
+    var lv = DR.level();
+    return '<div class="seg">' + LEVELS.map(function (o) { return '<button class="' + (lv === o[0] ? 'on' : '') + '" data-act="setLevel" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join('') + '</div>';
+  }
+  var LEVEL_DESC = {
+    easy: '네 개의 보기 중에서 고릅니다. 보기는 소리가 비슷하거나 같은 주제의 말로 골라 헷갈리게 했어요.',
+    mid: '절반쯤은 보기 없이 직접 쓰기 · 조각 맞추기 · 떠올리기로 나옵니다.',
+    hard: '보기를 거의 없앴어요. 일본어로 직접 쓰거나(로마자 입력 → 가나), 뜻을 떠올린 뒤 정답을 보고 스스로 채점합니다. 평가·시험에서는 스스로 채점 대신 직접 쓰기로 나와요.'
+  };
+  function drillCard() {
+    var s = st();
+    if (Object.keys(s.srs).length < 8) return '';
+    var c = DR.counts(), d = DR.state();
+    return '<section class="card stack drill-card"><div class="sec-title"><h2 style="font-size:15px">누적 복습</h2><span class="jp">総復習</span></div>' +
+      '<p class="small muted" style="margin:0">지금까지 배운 단어 <b>' + c.vocab + '</b>개 · 문법 <b>' + c.gram + '</b>개(예문과 "예문 더 보기" <b>' + c.ex + '</b>개) · 애니 대사 <b>' + c.line + '</b>개에서 20문항씩 섞어 냅니다. 아직 안 나온 것과 자주 틀린 것이 먼저 나오고, 끝나면 바로 다음 세트를 이어 풀 수 있어요.</p>' +
+      '<div class="seg wide" role="tablist" aria-label="문제 종류">' + Object.keys(DRILL_KIND).map(function (k) { return '<button class="' + (d.kind === k ? 'on' : '') + '" data-act="drillKind" data-v="' + k + '" role="tab" aria-selected="' + (d.kind === k) + '">' + DRILL_KIND[k] + '</button>'; }).join('') + '</div>' +
+      '<div class="row" style="justify-content:space-between;gap:8px;flex-wrap:wrap"><span class="small" style="font-weight:700">난이도</span>' + levelSeg() + '</div>' +
+      '<p class="small muted" style="margin:0">' + LEVEL_DESC[DR.level()] + '</p>' +
+      '<button class="btn block" data-act="drill" data-v="' + d.kind + '">' + I.play + ' 20문항 시작</button>' +
+      (d.ans ? '<div class="small muted center">지금까지 ' + d.sets + '세트 · ' + U.fmt(d.ans) + '문항 · 정답률 ' + Math.round(d.ok / d.ans * 100) + '%</div>' : '') +
+      '</section>';
   }
   function itemLabel(it) {
     if (it.type === 'kana') return { jp: it.c, m: it.ro, audio: it.c };
@@ -639,6 +665,7 @@
       '<div class="set-row"><div><div class="l">말하기 속도</div><div class="d">기본 속도 <span class="tabnum" id="rateVal">' + s.rate.toFixed(2) + '</span>배</div></div><input id="rateRange" type="range" min="0.6" max="1.3" step="0.05" value="' + s.rate + '" data-input="rate"></div>' +
       '<div class="set-row"><div class="l">음성 테스트</div>' + audioBtn('アニメを字幕なしで楽しめるように、毎日少しずつ頑張りましょう。') + '</div>' +
       '<div class="set-row"><div><div class="l">로마자 표시</div><div class="d">자동: 1장(문자 단계)에서만 표시</div></div><div class="seg">' + [['auto', '자동'], ['always', '항상'], ['never', '숨김']].map(function (o) { return '<button class="' + (s.romaji === o[0] ? 'on' : '') + '" data-act="setRomaji" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join('') + '</div></div>' +
+      '<div class="set-row" style="flex-wrap:wrap"><div style="min-width:200px;flex:1"><div class="l">문제 난이도</div><div class="d">' + LEVEL_DESC[DR.level()] + ' 레슨·평가·복습 모두에 적용돼요</div></div>' + levelSeg() + '</div>' +
       '<div class="set-row"><div><div class="l">문제에 한자·로마자 힌트</div><div class="d">끄면(기본) 문제에서는 가나만 보이고, 답을 고른 뒤에 한자·로마자를 보여 줍니다</div></div><button class="switch ' + (s.qHints ? 'on' : '') + '" data-act="toggle" data-v="qHints" role="switch" aria-checked="' + !!s.qHints + '" aria-label="문제에 한자·로마자 힌트"></button></div>' +
       '<div class="set-row"><div><div class="l">후리가나</div><div class="d">한자 위에 읽는 법 표시</div></div><button class="switch ' + (s.furigana ? 'on' : '') + '" data-act="toggle" data-v="furigana" role="switch" aria-checked="' + s.furigana + '" aria-label="후리가나"></button></div>' +
       '<div class="set-row"><div class="l">효과음</div><button class="switch ' + (s.sfx ? 'on' : '') + '" data-act="toggle" data-v="sfx" role="switch" aria-checked="' + s.sfx + '" aria-label="효과음"></button></div>' +
@@ -688,6 +715,8 @@
       '<p><b>간격 반복(SRS)</b> · 에빙하우스의 망각 곡선 연구 이후 반복 확인된 "간격 효과"를 적용해, 배운 항목을 1·2·4·7·14·30·60일 간격으로 다시 묻습니다.</p>' +
       '<p><b>인출 연습</b> · 다시 읽기보다 "떠올리기"가 기억을 더 강하게 만든다는 연구(시험 효과)에 따라, 매 화를 평가로 마무리합니다.</p>' +
       '<p><b>힌트는 답한 뒤에</b> · 문제에서는 한자·로마자를 숨겨 스스로 떠올리게 하고, 답을 고른 뒤 정답 카드로 보여 줍니다. 쉽게 풀리는 문제보다 조금 애써 떠올린 문제가 오래 기억된다는 연구(로버트 비요크의 \'바람직한 어려움\')를 따랐습니다. 설정에서 힌트를 다시 켤 수 있어요.</p>' +
+      '<p><b>보기 없이 떠올리기</b> · 보기를 보고 고르는 것(재인)보다 스스로 만들어 내는 것(회상)이 더 오래 남는다는 연구(생성 효과: Slamecka & Graf, 1978)에 따라, 난이도를 올리면 일본어로 직접 쓰거나 뜻을 떠올린 뒤 스스로 채점하게 했습니다. 직접 쓰기는 로마자로 치면 가나로 바뀌고, 장음 표기(ー/う)처럼 소리는 맞는데 표기만 다른 답은 맞음으로 치되 바른 표기를 알려 줍니다.</p>' +
+      '<p><b>섞어서 복습</b> · 누적 복습은 단어·문법·듣기를 한 세트에 섞어 냅니다. 같은 유형을 몰아서 푸는 것보다 섞어 푸는 편이 나중에 더 잘 구별해 낸다는 "교차 학습" 연구(Rohrer & Taylor, 2007; Kornell & Bjork, 2008)를 따랐어요.</p>' +
       '<p><b>듣기 우선</b> · 목표가 애니 청해이므로 모든 단어·예문에 음성을 붙이고, 평가마다 듣기 문항을 최소 3개 넣었습니다. 6장에서는 장면 대화를 한국어 자막 → 일본어 자막 → 자막 없음 순서로 듣습니다.</p>' +
       '<p><b>한국어 화자 맞춤</b> · 어순·조사·한자음이 닮은 점을 적극 활용해 설명합니다(예: 約束 = 약속).</p>' +
       '<p><b>구어 집중</b> · 교과서 존댓말만으로는 애니가 들리지 않기 때문에 반말·문말 조사·축약(〜てる, 〜ちゃう)·역할어를 따로 다룹니다.</p>' +
@@ -710,23 +739,24 @@
   }
   function buildSteps(day, mode) {
     var D = JP.days[day];
-    if (mode === 'testOnly') return [{ k: 'testIntro' }, { k: 'test', qs: Q.test(day) }, { k: 'result' }];
+    var H2 = DR.harden;
+    if (mode === 'testOnly') return [{ k: 'testIntro' }, { k: 'test', qs: H2(Q.test(day), 'test') }, { k: 'result' }];
     if (D.type === 'lesson') {
       var steps = [{ k: 'intro' }];
       var due = SRS.due().filter(function (id) { return JP.items[id].day < day; });
-      if (due.length) steps.push({ k: 'warmup', qs: Q.forItems(due.slice(0, 8), 8) });
+      if (due.length) steps.push({ k: 'warmup', qs: H2(Q.forItems(due.slice(0, 8), 8), 'warmup') });
       steps.push({ k: 'learn', cards: buildCards(D) });
-      steps.push({ k: 'practice', qs: Q.practice(day) });
+      steps.push({ k: 'practice', qs: H2(Q.practice(day), 'practice') });
       if (D.line) steps.push({ k: 'line' });
       if (D.note) steps.push({ k: 'note' });
-      steps.push({ k: 'testIntro' }, { k: 'test', qs: Q.test(day) }, { k: 'result' });
+      steps.push({ k: 'testIntro' }, { k: 'test', qs: H2(Q.test(day), 'test') }, { k: 'result' });
       return steps;
     }
-    if (D.type === 'boss') return [{ k: 'bossIntro' }, { k: 'boss', qs: Q.boss(day) }, { k: 'result' }];
-    if (D.type === 'listen') return [{ k: 'listenIntro' }, { k: 'listenTest', qs: Q.listen(day) }, { k: 'result' }];
-    return [{ k: 'examIntro' }, { k: 'exam', qs: Q.exam(day) }, { k: 'result' }];
+    if (D.type === 'boss') return [{ k: 'bossIntro' }, { k: 'boss', qs: H2(Q.boss(day), 'boss') }, { k: 'result' }];
+    if (D.type === 'listen') return [{ k: 'listenIntro' }, { k: 'listenTest', qs: H2(Q.listen(day), 'listenTest') }, { k: 'result' }];
+    return [{ k: 'examIntro' }, { k: 'exam', qs: H2(Q.exam(day), 'exam') }, { k: 'result' }];
   }
-  var STEP_LABEL = { intro: '시작', warmup: '워밍업 복습', learn: '새로 배우기', practice: '연습', line: '오늘의 애니 대사', note: '인문학 한 스푼', testIntro: '오늘의 평가', test: '오늘의 평가', result: '결과', bossIntro: '보스전', boss: '보스전', listenIntro: '청해 특훈', listenTest: '청해 특훈', examIntro: '승급 시험', exam: '승급 시험', review: '복습' };
+  var STEP_LABEL = { drill: '누적 복습', intro: '시작', warmup: '워밍업 복습', learn: '새로 배우기', practice: '연습', line: '오늘의 애니 대사', note: '인문학 한 스푼', testIntro: '오늘의 평가', test: '오늘의 평가', result: '결과', bossIntro: '보스전', boss: '보스전', listenIntro: '청해 특훈', listenTest: '청해 특훈', examIntro: '승급 시험', exam: '승급 시험', review: '복습' };
   var GRADED = { test: 1, boss: 1, listenTest: 1, exam: 1 };
 
   function startRun(day, mode) {
@@ -747,7 +777,18 @@
     else ids = U.sample(Object.keys(st().srs).filter(function (id) { var it = JP.items[id]; return it && it.type !== 'kana' || (it && Math.random() < .3); }), 15);
     if (!ids.length) { toast('복습할 항목이 없어요.'); return; }
     var qs = kind === 'listen' ? ids.map(function (id) { var q = Q.qFor(JP.items[id], 'listen'); if (q) q.srsId = id; return q; }).filter(Boolean) : Q.forItems(U.shuffle(ids), ids.length);
-    run = { day: 0, D: null, mode: 'review', reviewKind: kind, steps: [{ k: 'review', qs: qs }, { k: 'result' }], si: 0, i: 0, answers: [], xpLive: 0, combo: 0 };
+    run = { day: 0, D: null, mode: 'review', reviewKind: kind, steps: [{ k: 'review', qs: DR.harden(qs, 'review') }, { k: 'result' }], si: 0, i: 0, answers: [], xpLive: 0, combo: 0 };
+    renderRun();
+  }
+  // 누적 복습: 지금까지 배운 것 전체에서 20문항 (끝나면 '한 세트 더')
+  function startDrill(kind) {
+    closeOverlay();
+    SP.unlock();
+    var d = DR.state(); if (kind) d.kind = kind;
+    var qs = DR.buildSet(d.kind, 20);
+    if (qs.length < 5) { toast('아직 배운 것이 적어요. 에피소드를 몇 화 더 진행해 주세요.'); return; }
+    JP.clips.prefetch([0, C.chapterOf(currentDay()).n]);
+    run = { day: 0, D: null, mode: 'drill', drillKind: d.kind, steps: [{ k: 'drill', qs: qs }, { k: 'result' }], si: 0, i: 0, answers: [], xpLive: 0, combo: 0 };
     renderRun();
   }
   function stepNow() { return run.steps[run.si]; }
@@ -798,6 +839,7 @@
     },
     warmup: function () { return qStep('어제까지 배운 것 중 복습할 때가 된 항목이에요.'); },
     review: function () { return qStep(); },
+    drill: function () { return qStep(); },
     practice: function () { return qStep(); },
     learn: function () {
       var s = stepNow(), c = s.cards[run.i], n = s.cards.length, body = '', after = null;
@@ -894,17 +936,17 @@
     if (!run.queue) run.queue = s.qs.slice();
     if (run.i >= run.queue.length) { setTimeout(nextStep, 0); return { body: '' }; }
     var q = run.queue[run.i];
-    run.cur = q; run.answered = false;
+    run.cur = q; run.answered = false; run.selfShown = false;
     if (q.kind === 'order') run.order = [];
     if (q.kind === 'match') run.match = { sel: null, done: {}, miss: 0 };
     var head = '';
     if (s.k === 'boss') head = bossHud();
     if (s.k === 'listenTest') head = '<div class="row" style="justify-content:space-between"><span class="type-badge listen">' + q.stage + '단계 · ' + q.rate + '배속</span><span class="small muted tabnum">' + (run.i + 1) + ' / ' + run.queue.length + '</span></div>';
     else if (s.k === 'exam') head = '<div class="row" style="justify-content:space-between"><span class="type-badge exam">' + ({ kana: '문자', vocab: '어휘', gram: '문법', listen: '청해' })[q.section] + '</span><span class="small muted tabnum">' + (run.i + 1) + ' / ' + run.queue.length + '</span></div>';
-    else if (s.k !== 'boss') head = '<div class="row" style="justify-content:space-between">' + (q.review ? '<span class="type-badge">복습 문제</span>' : '<span></span>') + '<span class="small muted tabnum">' + (run.i + 1) + ' / ' + run.queue.length + '</span></div>';
+    else if (s.k !== 'boss') head = '<div class="row" style="justify-content:space-between">' + (q.review ? '<span class="type-badge">복습 문제</span>' : s.k === 'drill' ? '<span class="type-badge">' + I.cycle + DRILL_KIND[run.drillKind] + '</span>' : '<span></span>') + '<span class="small muted tabnum">' + (run.i + 1) + ' / ' + run.queue.length + '</span></div>';
     if (note && run.i === 0) head += '<p class="small muted" style="margin:0">' + note + '</p>';
     var r = renderQ(q);
-    return { body: head + r.body, foot: r.foot || '', after: function () { autoAudio(q); } };
+    return { body: head + r.body, foot: r.foot || '', after: function () { autoAudio(q); if (r.after) r.after(); } };
   }
   function bossHud() {
     var b = run.boss, hearts = '';
@@ -928,9 +970,7 @@
     });
   }
 
-  function renderQ(q) {
-    if (q.kind === 'match') return renderMatch(q);
-    if (q.kind === 'order') return renderOrder(q);
+  function promptHtml(q) {
     var p = q.prompt, body = '<div class="q-head">' + esc(p.q || '') + '</div><div class="q-prompt">';
     var noVoice = !SP.hasJa();
     if (p.dialog) {
@@ -939,6 +979,7 @@
       body += '<div class="row" style="justify-content:center">' + audioBtn(p.audio, { big: true, rate: q.rate || 1 }) + audioBtn(p.audio, { slow: true, rate: 0.6 }) + '</div>' +
         voiceBtn(p.audio, q.rate || 1) +
         (noVoice ? '<div class="q-small">(음성 없음) <span class="jp">' + esc(p.audio) + '</span></div>' : '');
+      if (p.html) body += '<div class="q-sent">' + p.html + '</div>';          // 듣고 빈칸 받아쓰기: 빈칸 있는 문장도 보여 줌
     } else if (p.big) {
       body += '<div class="' + p.cls + '">' + esc(p.big) + '</div>';
       // 한자·로마자는 답을 맞히는 단서가 되므로 기본으로 숨기고, 답을 고른 뒤 정답 카드에서 보여 줌
@@ -950,8 +991,18 @@
     } else if (p.html) {
       body += '<div class="q-sent">' + p.html + '</div>';
       if (p.ko) body += '<div class="q-ko">' + esc(p.ko) + '</div>';
+      if (p.audioBtn) body += audioBtn(p.audioBtn);
+    } else if (p.ko) {
+      body += '<div class="q-ko" style="font-size:17px">' + esc(p.ko) + '</div>';
     }
-    body += '</div>';
+    return body + '</div>';
+  }
+  function renderQ(q) {
+    if (q.kind === 'match') return renderMatch(q);
+    if (q.kind === 'order') return renderOrder(q);
+    if (q.kind === 'input') return renderInput(q);
+    if (q.kind === 'self') return renderSelf(q);
+    var body = promptHtml(q);
     var long = q.options.some(function (o) { return String(o.label).replace(/<[^>]+>/g, '').length > 11; }) || q.optCls === 'ko-opt';
     body += '<div class="opts ' + (long ? 'one' : '') + '" id="opts">' + q.options.map(function (o) {
       return '<button class="opt ' + (q.optCls || '') + '" data-act="ans" data-v="' + o.value + '">' + (q.optHtml ? o.label : esc(o.label)) + '</button>';
@@ -959,11 +1010,38 @@
     return { body: body };
   }
   function renderOrder(q) {
+    var need = q.need || q.tokens.length;
     var body = '<div class="q-head">' + esc(q.prompt.q) + '</div><div class="q-prompt"><div class="q-ko" style="font-size:17px">' + esc(q.prompt.ko) + '</div>' + (q.prompt.audioBtn ? audioBtn(q.prompt.audioBtn) : '') + '</div>' +
       '<div class="order-tray" id="tray" aria-label="고른 순서">' + run.order.map(function (ti, j) { var t = q.tokens[ti]; return '<button class="tok" data-act="untok" data-j="' + j + '">' + t.html + '</button>'; }).join('') + '</div>' +
-      '<div class="order-bank">' + q.tokens.map(function (t, ti) { return '<button class="tok ' + (run.order.indexOf(ti) >= 0 ? 'used' : '') + '" data-act="tok" data-i="' + ti + '">' + t.html + '</button>'; }).join('') + '</div>';
-    var full = run.order.length === q.tokens.length;
+      '<div class="order-bank">' + q.tokens.map(function (t, ti) { return '<button class="tok ' + (run.order.indexOf(ti) >= 0 ? 'used' : '') + '" data-act="tok" data-i="' + ti + '">' + t.html + '</button>'; }).join('') + '</div>' +
+      (need < q.tokens.length ? '<p class="small muted center" style="margin:0">조각 ' + need + '개를 고르세요</p>' : '');
+    var full = run.order.length === need;
     return { body: body, foot: '<button class="btn block" data-act="orderCheck" ' + (full ? '' : 'disabled') + '>확인</button>' };
+  }
+  // 직접 입력: 로마자(또는 한글 자판 그대로)를 가나로 바꿔 보여 주고, 확인을 누르면 채점
+  var TOUCH = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+  function renderInput(q) {
+    var body = promptHtml(q) +
+      '<div class="ans-box"><input id="ansIn" class="ans-in" type="text" data-input="ans" lang="ja" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="' + (q.romaji ? '로마자로 (예: shi)' : '로마자로 입력 (예: shigoto)') + '" aria-label="답 입력">' +
+      '<div class="ans-prev jp" id="ansPrev" aria-live="polite">&nbsp;</div>' +
+      '<div class="ans-help small muted">shi→し · tsu→つ · kk→っ · nn→ん · -→ー · 한글 자판 그대로 쳐도 돼요</div></div>';
+    return {
+      body: body,
+      foot: '<div class="card-nav"><button class="btn ghost" data-act="inputGiveUp">모르겠어요</button><button class="btn" data-act="inputCheck">확인</button></div>',
+      // 휴대폰에서는 자판이 문제를 가리지 않도록 저절로 띄우지 않음 (입력칸을 누르면 뜸)
+      after: function () { var el = document.getElementById('ansIn'); if (el && !TOUCH) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } } }
+    };
+  }
+  // 스스로 채점: 속으로 떠올린 뒤 정답을 보고 알았는지 고름
+  function renderSelf(q) {
+    var shown = !!run.selfShown;
+    var body = promptHtml(q) + (shown
+      ? '<div class="self-ans"><div class="eyebrow">정답</div><div class="self-a">' + q.answerHtml + '</div>' + revealHtml(q.reveal) + '</div>'
+      : '<p class="small muted center" style="margin:0">보기 없이 속으로 답을 떠올린 다음, 정답을 확인하세요.</p>');
+    var foot = shown
+      ? '<div class="card-nav"><button class="btn ghost" data-act="selfRate" data-v="0">몰랐어요</button><button class="btn" data-act="selfRate" data-v="1">알았어요</button></div>'
+      : '<button class="btn block" data-act="selfShow">정답 보기</button>';
+    return { body: body, foot: foot };
   }
   function renderMatch(q) {
     var m = run.match;
@@ -989,6 +1067,12 @@
       if (ok) run.xpLive += 3;
     } else if (k === 'practice') {
       if (ok && !q._retry) run.xpLive += 2;
+    } else if (k === 'drill') {
+      // 누적 복습: 오늘의 복습 일정은 그대로 두고, 틀린 항목만 내일 오늘의 복습에 다시 나오게 함
+      DR.noteAnswer(q, ok);
+      if (!ok && id && SRS.get(id)) SRS.flagWeak(id);
+      s.cnt.reviews++;
+      if (ok) run.xpLive += 3;
     } else if (!ok && id && SRS.get(id)) SRS.flagWeak(id);
   }
   function answerChoice(v, btn) {
@@ -1024,6 +1108,8 @@
   }
   function correctLabel(q) {
     if (q.kind === 'choice') { var o = q.options.filter(function (x) { return x.value === q.answer; })[0]; return o ? (q.optHtml ? o.label : esc(o.label)) : ''; }
+    if (q.kind === 'input') return q.answerLabel;
+    if (q.kind === 'self') return q.answerHtml;
     if (q.kind === 'order') return q.answerSeq.map(C.rubyHtml).join(' ');
     return '';
   }
@@ -1037,7 +1123,9 @@
   function showFeedback(q, ok) {
     var title = ok ? (run.combo >= 5 ? run.combo + '연속 정답!' : U.pick(PRAISE)) : '아쉬워요';
     var html = '<div class="feedback ' + (ok ? 'ok' : 'bad') + '" role="status"><div class="in"><div class="fb-title">' + (ok ? I.check : I.x).replace('<svg', '<svg style="width:22px;height:22px"') + title + '</div>' +
-      (!ok && q.kind !== 'match' ? '<div class="small">정답: <b class="' + (q.optCls === 'jp-opt' || q.kind === 'order' ? 'jp' : '') + '">' + correctLabel(q) + '</b>' + (stepNow().k === 'practice' ? ' <span class="muted">· 이 문제는 끝에 한 번 더 나와요</span>' : '') + '</div>' : '') +
+      (q.kind === 'input' && ok && q._near ? '<div class="small">' + esc(q._note) + '</div>' : '') +
+      (!ok && q.kind === 'input' ? '<div class="small">내 답: <b class="jp">' + esc(q._given || '(없음)') + '</b></div>' : '') +
+      (!ok && q.kind !== 'match' ? '<div class="small">정답: <b class="' + (q.optCls === 'jp-opt' || q.kind === 'order' || q.kind === 'input' ? 'jp' : '') + '">' + correctLabel(q) + '</b>' + (stepNow().k === 'practice' ? ' <span class="muted">· 이 문제는 끝에 한 번 더 나와요</span>' : '') + '</div>' : '') +
       revealHtml(q.reveal) +
       '<button class="btn ' + (ok ? 'ok' : 'bad') + ' block" data-act="cont">계속</button></div></div>';
     document.getElementById('fb').innerHTML = html;
@@ -1068,10 +1156,14 @@
     if (hr >= 23 || hr < 4) s.flags.owl = true;
     if (hr >= 4 && hr < 7) s.flags.early = true;
     if (r.xpLive) res.xp.push(['연습·복습 정답', r.xpLive]);
-    if (r.mode === 'review') {
+    if (r.mode === 'review' || r.mode === 'drill') {
       var n = r.answers.length, c = r.answers.filter(function (a) { return a.ok; }).length;
       res.score = n ? Math.round(c / n * 100) : 0; res.correct = c; res.total = n;
       if (n >= 5) touchStreak();
+      if (r.mode === 'drill') {
+        var dd = DR.state(); dd.sets++; res.sets = dd.sets;
+        res.wrong = r.answers.filter(function (a) { return !a.ok; }).map(function (a) { return a.q; });
+      }
     } else {
       var D = r.D, gradedK = { test: 1, boss: 1, listenTest: 1, exam: 1 };
       var ga = r.answers.filter(function (a) { return gradedK[a.step]; });
@@ -1131,6 +1223,9 @@
     if (run.mode === 'review') {
       body += stampSvg(r.score >= 70 ? 'maru' : 'san', 'big-stamp' + (r.score >= 70 ? '' : ' fail')) + '<div class="score tabnum">' + r.correct + '<small> / ' + r.total + '</small></div><div class="verdict">복습 완료</div>' +
         '<p class="small muted" style="margin:0">맞힌 항목은 복습 간격이 늘어나고, 틀린 항목은 내일 다시 나옵니다.</p>';
+    } else if (run.mode === 'drill') {
+      body += stampSvg(r.score >= 90 ? 'hana' : r.score >= 70 ? 'maru' : 'san', 'big-stamp' + (r.score >= 70 ? '' : ' fail')) + '<div class="score tabnum">' + r.correct + '<small> / ' + r.total + '</small></div><div class="verdict">누적 복습 ' + r.sets + '번째 세트 완료</div>' +
+        '<p class="small muted" style="margin:0">틀린 항목은 내일 "오늘의 복습"에 다시 나오고, 다음 세트에도 먼저 나옵니다. 아직 안 나온 것부터 차례로 돌아가며 나와요.</p>';
     } else {
       var fail = !r.pass;
       body += stampSvg(fail ? 'san' : r.grade, 'big-stamp' + (fail ? ' fail' : ''));
@@ -1152,18 +1247,20 @@
     r.badges.forEach(function (b) { body += '<div class="newbadge">' + medal(b.g, true) + '<div><b>새 배지: ' + esc(b.n) + '</b><div class="small">' + esc(b.d) + '</div></div></div>'; });
     if (r.wrong && r.wrong.length) {
       body += '<div class="wrong-list"><div class="eyebrow">틀린 문제 다시 보기</div>' + r.wrong.map(function (q) {
-        return '<div class="w"><div class="txt">' + revealHtml(q.reveal) + (q.kind === 'choice' ? '<div class="small">정답: <b>' + correctLabel(q) + '</b></div>' : '') + '</div></div>';
+        return '<div class="w"><div class="txt">' + revealHtml(q.reveal) + (q.kind === 'input' ? '<div class="small">내 답: <b class="jp">' + esc(q._given || '(없음)') + '</b></div>' : '') +
+          (q.kind === 'choice' || q.kind === 'input' || q.kind === 'order' || q.kind === 'self' ? '<div class="small">정답: <b class="' + (q.kind === 'choice' || q.kind === 'self' ? '' : 'jp') + '">' + correctLabel(q) + '</b></div>' : '') + '</div></div>';
       }).join('') + '</div>';
     }
     body += '</div>';
     var foot = '<div class="stack">';
     if (run.mode === 'review') foot += '<button class="btn block" data-act="endRun">확인</button>';
+    else if (run.mode === 'drill') foot += '<button class="btn block" data-act="drill" data-v="' + run.drillKind + '">' + I.cycle + ' 한 세트 더 (20문항)</button><button class="btn ghost block" data-act="endRun">그만하기</button>';
     else if (!r.pass) foot += '<button class="btn shu block" data-act="retry">다시 도전</button><button class="btn ghost block" data-act="endRun">홈으로</button>';
     else if (D.day < JP.totalDays) foot += '<button class="btn block" data-act="start" data-day="' + (D.day + 1) + '">다음 화로</button><button class="btn ghost block" data-act="endRun">홈으로</button>';
     else foot += '<button class="btn block" data-act="endRun">홈으로</button>';
     return { body: body, foot: foot + '</div>' };
   }
-  function endRun() { run = null; SP.stop(); var qb = document.getElementById('quitBox'); if (qb) qb.remove(); closeOverlay(); render(); }
+  function endRun() { if (run && (run.mode === 'review' || run.mode === 'drill') && run.answers.length) save(); run = null; SP.stop(); var qb = document.getElementById('quitBox'); if (qb) qb.remove(); closeOverlay(); render(); }
 
   /* ================= 이벤트 ================= */
   var H = {
@@ -1195,6 +1292,35 @@
     dayReview: function (el) { openDayReview(+el.dataset.day); },
     bookAll: function () { ui.bookAll = !ui.bookAll; render(); },
     review: function (el) { startReview(el.dataset.v); },
+    drill: function (el) { startDrill(el.dataset.v); },
+    drillKind: function (el) { DR.state().kind = el.dataset.v; save(); render(); },
+    setLevel: function (el) { st().settings.level = el.dataset.v; save(); render(); },
+    inputCheck: function () {
+      if (!run || run.answered || !run.cur || run.cur.kind !== 'input') return;
+      var el = document.getElementById('ansIn'), raw = el ? el.value : '';
+      if (!raw.trim()) { if (el) el.focus(); toast('답을 입력하거나 "모르겠어요"를 눌러 주세요.'); return; }
+      run.answered = true;
+      var q = run.cur, r = DR.grade(raw, q.answers);
+      q._given = r.given; q._note = r.note; q._near = r.near;
+      if (el) { el.blur(); el.disabled = true; }
+      recordAnswer(q, r.ok); afterAnswer(q, r.ok);
+    },
+    inputGiveUp: function () {
+      if (!run || run.answered || !run.cur || run.cur.kind !== 'input') return;
+      run.answered = true;
+      var q = run.cur; q._given = ''; q._note = ''; q._near = false;
+      var el = document.getElementById('ansIn'); if (el) { el.blur(); el.disabled = true; }
+      recordAnswer(q, false); afterAnswer(q, false);
+    },
+    selfShow: function () { if (!run || !run.cur || run.cur.kind !== 'self') return; run.selfShown = true; SP.stop(); rerenderQ(renderSelf(run.cur)); },
+    selfRate: function (el) {
+      if (!run || run.answered || !run.cur || run.cur.kind !== 'self') return;
+      run.answered = true;
+      var q = run.cur, ok = el.dataset.v === '1';
+      recordAnswer(q, ok); JP.sfx(ok ? 'ok' : 'bad');
+      if (!ok && stepNow().k === 'practice' && !q._retry) run.queue.push(Object.assign({}, q, { _retry: true }));
+      advance();
+    },
     playDlg: function (el) {
       var D = JP.days[+el.dataset.day];
       playDialog.free = true;
@@ -1221,7 +1347,7 @@
       if (stepNow().k === 'boss' && (run.boss.hp <= 0 || run.boss.lives <= 0)) { nextStep(); return; }
       advance();
     },
-    tok: function (el) { var i = +el.dataset.i; if (run.order.indexOf(i) >= 0 || run.answered) return; run.order.push(i); JP.sfx('tap'); var r = renderOrder(run.cur); rerenderQ(r); },
+    tok: function (el) { var i = +el.dataset.i; if (run.order.indexOf(i) >= 0 || run.answered || run.order.length >= (run.cur.need || run.cur.tokens.length)) return; run.order.push(i); JP.sfx('tap'); var r = renderOrder(run.cur); rerenderQ(r); },
     untok: function (el) { if (run.answered) return; run.order.splice(+el.dataset.j, 1); rerenderQ(renderOrder(run.cur)); },
     orderCheck: function () {
       if (run.answered) return; run.answered = true;
@@ -1308,6 +1434,10 @@
       ui.bookQuery = e.target.value;
       clearTimeout(H._st);
       H._st = setTimeout(function () { render(); var i = document.getElementById('bookSearch'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }, 250);
+    } else if (k === 'ans') {
+      // 입력한 것을 가나로 바꿔 미리 보여 줌 (한글 자판으로 친 것도 자판 글쇠로 되돌려 바꿈)
+      var pv = document.getElementById('ansPrev');
+      if (pv) { var kana = DR.toKana(e.target.value); pv.textContent = kana || '\u00a0'; }
     } else if (k === 'rate') {
       st().settings.rate = +e.target.value; var rv = document.getElementById('rateVal'); if (rv) rv.textContent = (+e.target.value).toFixed(2);
       clearTimeout(H._rt); H._rt = setTimeout(save, 400);
@@ -1325,6 +1455,7 @@
     }
   });
   document.addEventListener('keydown', function (e) {
+    if (e.target && e.target.id === 'ansIn' && e.key === 'Enter' && !e.isComposing) { e.preventDefault(); H.inputCheck(); return; }
     if (!run || e.target.tagName === 'INPUT') return;
     if (e.key === 'Enter') { var b = document.querySelector('.feedback [data-act="cont"]') || document.querySelector('#runFoot .btn:not(.ghost):not([disabled])'); if (b) { e.preventDefault(); b.click(); } }
     else if (/^[1-4]$/.test(e.key)) { var o = U.$$('#opts .opt')[+e.key - 1]; if (o && !run.answered) o.click(); }

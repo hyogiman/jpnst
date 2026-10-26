@@ -571,3 +571,15 @@ input[type="range"] { accent-color: var(--ruri); width: 140px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* 직접 입력 · 스스로 채점 (js/drill.js) */
+.ans-box { display: flex; flex-direction: column; gap: 6px; }
+.ans-in { width: 100%; border: 2px solid var(--line); background: var(--card); border-radius: 14px; padding: 12px 14px; font-size: 18px; color: var(--ink); font-family: var(--font-body); }
+.ans-in:focus { outline: none; border-color: var(--ruri); box-shadow: 0 0 0 3px var(--ruri-soft); }
+.ans-in:disabled { opacity: .7; }
+.ans-prev { min-height: 42px; font-family: var(--font-jp); font-size: 28px; font-weight: 600; text-align: center; color: var(--ruri); word-break: break-all; }
+.ans-help { text-align: center; line-height: 1.5; }
+.self-ans { display: flex; flex-direction: column; gap: 8px; border: 2px dashed var(--line); border-radius: 14px; padding: 12px 14px; }
+.self-a { font-size: 20px; font-weight: 700; color: var(--ink); }
+.center { text-align: center; }
+.drill-card .seg.wide button { font-size: 13px; padding: 8px 4px; }

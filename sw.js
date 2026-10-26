@@ -14,7 +14,7 @@ var ASSETS = [
   './', 'index.html', 'css/app.css', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png',
   'js/data/kana.js', 'js/data/audio-index.js', 'js/course.js', 'js/core.js',
   'js/data/ch1.js', 'js/data/ch2.js', 'js/data/ch3.js', 'js/data/ch4.js', 'js/data/ch5.js', 'js/data/ch6.js',
-  'js/quiz.js', 'js/app.js'
+  'js/quiz.js', 'js/drill.js', 'js/app.js'
 ].concat(PACKS.slice(0, 1));
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(ASSETS); }).then(function () { return self.skipWaiting(); }));

@@ -106,8 +106,15 @@
   }
   // 같은 소리(동음이의어)의 단어는 오답 보기에서 제외: 듣기 문제에서 정답이 둘이 되지 않도록
   function vocabOthers(v) { var r = C.toHira(v.r); return nearFirst(vocabPool(), v).filter(function (x) { return C.toHira(x.r) !== r; }); }
+  // 헷갈리는 보기 (js/drill.js): 소리가 1~2박 다른 말 · 같은 한자 · 같은 화(같은 주제)의 말을 먼저. 그 화까지 나온 말 중에서
+  function confusable(v) {
+    if (!JP.drill) return null;
+    var pool = vocabPool().filter(function (x) { return x.day <= (v.day || 1) + 2; });
+    var wr = JP.drill.confusableVocab(v, 3, pool.length >= 8 ? pool : vocabPool());
+    return wr.length >= 3 ? wr : null;
+  }
   function vocabMeaning(v) {
-    var wr = distinct(vocabOthers(v), 3, function (x) { return x.m; }, [v.m]);
+    var wr = confusable(v) || distinct(vocabOthers(v), 3, function (x) { return x.m; }, [v.m]);
     return mkChoice({
       item: v, section: 'vocab', listening: false, type: 'vocabMeaning',
       prompt: { big: v.r, cls: 'jp-word', small: vocabLabel(v), ro: romajiOn(v) ? (v.ro || C.romaji(v.r)) : '', q: '뜻을 고르세요', audioBtn: v.r },
@@ -115,7 +122,7 @@
     }, v.m, wr.map(function (x) { return x.m; }));
   }
   function vocabListen(v) {
-    var wr = distinct(vocabOthers(v), 3, function (x) { return x.m; }, [v.m]);
+    var wr = confusable(v) || distinct(vocabOthers(v), 3, function (x) { return x.m; }, [v.m]);
     return mkChoice({
       item: v, section: 'listen', listening: true, type: 'vocabListen',
       prompt: { audio: v.r, q: '듣고 뜻을 고르세요' },
@@ -123,7 +130,7 @@
     }, v.m, wr.map(function (x) { return x.m; }));
   }
   function vocabReverse(v) {
-    var wr = distinct(vocabOthers(v), 3, function (x) { return x.r; }, [v.r]);
+    var wr = confusable(v) || distinct(vocabOthers(v), 3, function (x) { return x.r; }, [v.r]);
     // 뜻이 같은 단어가 오답으로 섞이지 않도록
     wr = wr.filter(function (x) { return x.m !== v.m; });
     while (wr.length < 3) {
@@ -145,7 +152,9 @@
     return distinct(pool.map(function (p) { return p.s; }), 3, function (x) { return x.ko; }, [s.ko]).map(function (x) { return x.ko; });
   }
   function sentListen(s, item, section) {
-    var wr = translationDistractors(s, item);
+    // 문법 예문은 같은 문법의 다른 예문(구조가 같음)을 먼저 보기로 (js/drill.js)
+    var wr = JP.drill ? JP.drill.sentDistractors(s, item, 3) : [];
+    if (wr.length < 3) wr = translationDistractors(s, item);
     return mkChoice({
       item: item, section: section || 'listen', listening: true, type: 'sentListen', sent: s,
       prompt: { audio: s.plain, q: '듣고 뜻을 고르세요' },
@@ -153,11 +162,13 @@
       reveal: sentReveal(s)
     }, s.ko, wr);
   }
+  // 서로 바꿔 써도 맞는 조사 짝 (방향의 へ/に, 나열의 と/や, 관계절의 の/が, 출발점의 から/より): 빈칸 오답 보기로 채우지 않음
+  var SAME_OK = { 'へ': ['に'], 'に': ['へ', 'と'], 'と': ['や', 'に'], 'や': ['と'], 'の': ['が'], 'が': ['の'], 'から': ['より'], 'より': ['から'] };
   function cloze(s, gp) {
-    var ans = s.cloze.answer;
+    var ans = s.cloze.answer, same = SAME_OK[ans] || [];
     var wr = s.cloze.opts.length ? s.cloze.opts.slice() : [];
     if (wr.length < 3) wr = wr.concat(U.shuffle((gp.o || []).filter(function (o) { return o !== ans && wr.indexOf(o) < 0; })));
-    if (wr.length < 3) wr = wr.concat(U.shuffle(PARTICLES.filter(function (o) { return o !== ans && wr.indexOf(o) < 0; })));
+    if (wr.length < 3) wr = wr.concat(U.shuffle(PARTICLES.filter(function (o) { return o !== ans && wr.indexOf(o) < 0 && same.indexOf(o) < 0; })));
     wr = wr.slice(0, 3);
     return mkChoice({
       item: gp, section: 'gram', listening: false, type: 'cloze', sent: s,

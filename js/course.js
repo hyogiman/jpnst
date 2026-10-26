@@ -63,6 +63,9 @@
       }
       if (n && SMALL_V[n] && RO[c]) {
         var b = RO[c];
+        // てぃ·でぃ·とぅ·どぅ는 로마자 입력으로 칠 때와 같게 (ti는 ち로 바뀌므로)
+        if ((c === 'て' || c === 'で') && n === 'ぃ') { out += (c === 'て' ? 'thi' : 'dhi'); i++; continue; }
+        if ((c === 'と' || c === 'ど') && n === 'ぅ') { out += (c === 'と' ? 'twu' : 'dwu'); i++; continue; }
         var special = { 'ふ': 'f', 'ゔ': 'v', 'う': 'w', 'て': 't', 'で': 'd', 'し': 'sh', 'じ': 'j', 'ち': 'ch', 'と': 't', 'ど': 'd' };
         if (special[c]) { out += special[c] + SMALL_V[n]; i++; continue; }
         out += b; continue;

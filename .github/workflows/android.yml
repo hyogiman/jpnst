@@ -57,7 +57,9 @@ jobs:
         run: npm ci
 
       - name: 콘텐츠 검사
-        run: node tools/validate.js
+        run: |
+          node tools/validate.js
+          node tools/drill-test.js
 
       - name: 앱 웹 파일 만들기 (www → Android)
         run: |
