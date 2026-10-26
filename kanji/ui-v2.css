@@ -62,3 +62,9 @@ html{scroll-padding-top:24px}body{background:linear-gradient(180deg,#f6f9ff 0%,#
 @media(max-width:550px){.shell{padding:20px 16px calc(105px + env(safe-area-inset-bottom))}.masthead{margin-bottom:18px}.masthead .brand h1{font-size:22px}.ui-card{padding:18px;border-radius:19px}.ui-hero{padding:22px 18px}.ui-hero h2{font-size:24px}.ui-words{gap:7px}.ui-word-tile{min-height:125px;border-radius:14px}.ui-word-tile .jp{font-size:21px}.ui-word-tile .reading{font-size:13px}.ui-word-tile .ko{font-size:11px}.ui-action{padding:15px;min-height:104px}.ui-action strong{font-size:15px}.ui-word-row{padding:10px}.ui-word-row .glyph{height:50px;width:50px;flex-basis:50px;font-size:24px}.ui-quiz .quiz-panel{padding:0}.ui-quiz .quiz-main{padding:20px 10px}.ui-explain-item .writing{width:62px;font-size:18px}.list-section .word-grid{grid-template-columns:1fr 1fr}.ui-profile .ui-card{padding:18px}}
 @media(max-width:355px){.ui-words{grid-template-columns:repeat(2,1fr)}.ui-fact{font-size:12px}.ui-explain-item{gap:7px;padding:10px}.ui-explain-item .writing{width:55px;font-size:16px}.ui-explain-item .flag{font-size:10px}}
 @media(min-width:800px){.ui-nav{max-width:780px;left:50%;transform:translateX(-50%);border-left:1px solid #e5ebf3;border-right:1px solid #e5ebf3}}
+
+/* Illustrated accent kept behind the learning CTA, never behind quiz answers. */
+.ui-hero:before{display:none}
+.ui-hero:after{content:"";position:absolute;right:-13px;top:-8px;width:68%;height:165px;pointer-events:none;z-index:0;background:url("./ui-landscape.svg") center right / contain no-repeat;opacity:.54}
+.ui-hero>*{position:relative;z-index:1}
+@media(max-width:480px){.ui-hero:after{width:80%;height:125px;right:-20px;top:-5px;opacity:.37}}
