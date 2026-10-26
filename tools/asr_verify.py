@@ -5,6 +5,7 @@
  - 가나 한 글자는 인식기가 "うん" "えい"처럼 뒤에 한 박을 덧붙이는 버릇이 있어, 기대한 박으로 시작하면 통과
  - 문장 사이에 긴 쉼이 있으면 인식기가 한쪽을 통째로 빠뜨릴 때가 있어(テストは…でした。きょうです。→ "きょうです"),
    쉼에서 나눠 따로 받아 적은 것도 함께 봄
+ - 세 번째 인식기 Whisper(--whisper)는 글자·소리 구별 짝처럼 짧은 녹음을 한 번 더 확인할 때 씀 (아래 Whisper 참고)
  - 모델: https://github.com/k2-fsa/sherpa-onnx/releases (asr-models) 의
    sherpa-onnx-zipformer-ja-reazonspeech-2024-08-01, sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2025-09-09
 """
@@ -37,6 +38,8 @@ def pron(text):
     global _ojt
     if not text: return ''
     text = re.sub(r'[A-Za-z]', lambda m: LATIN.get(m.group(0).upper(), ''), text)
+    # 인식기가 '絵をかく'의 かく를 描く로 적으면 pyopenjtalk가 えがく로 읽어 버려 맞게 읽은 녹음도 틀린 것이 됨 (이 앱의 かく는 모두 かく로 읽음)
+    text = text.replace('描', '書')
     t = PUNCT.sub(' ', text).strip()
     if not t: return ''
     if _ojt is None:
@@ -209,6 +212,17 @@ def expect(it):
         return [tp, pron(text)], {plain(text)}, marks
     return [pron(it.get('kana') or it['synth']), pron(text)], {plain(text)}, None
 
+def recognize(rec, clips):
+    """[(파형, 표본율)] → 받아 적은 글 목록"""
+    ss = []
+    pad = np.zeros(4800, dtype=np.float32)             # 앞뒤 0.3초 무음: 짧은 소리(가나 한 글자)도 인식이 안정되게
+    for x, sr in clips:
+        s = rec.create_stream()
+        s.accept_waveform(16000, np.concatenate([pad, to16k(x, sr), pad]))
+        ss.append(s)
+    rec.decode_streams(ss)
+    return [s.result.text for s in ss]
+
 class Checker:
     """후보 녹음 묶음을 두 인식기로 받아 적고 판정. 여러 작업 스레드가 함께 써도 되도록 잠금"""
     def __init__(self, models, threads=4):
@@ -228,14 +242,7 @@ class Checker:
         self.lock = threading.Lock()
 
     def _rec(self, rec, clips):
-        ss = []
-        pad = np.zeros(4800, dtype=np.float32)             # 앞뒤 0.3초 무음: 짧은 소리(가나 한 글자)도 인식이 안정되게
-        for x, sr in clips:
-            s = rec.create_stream()
-            s.accept_waveform(16000, np.concatenate([pad, to16k(x, sr), pad]))
-            ss.append(s)
-        rec.decode_streams(ss)
-        return [s.result.text for s in ss]
+        return recognize(rec, clips)
 
     def check(self, it, clips):
         """clips: [(파형, 표본율)] → [{'ok': 둘 중 하나라도 맞음, 'both': 둘 다 맞음, 'r1','r2': 인식 결과, 'd1','d2': 각각의 박 거리, 'd': 둘 중 작은 것}]"""
@@ -262,4 +269,27 @@ class Checker:
             # 확실히 맞음: 조사 자리가 불확실하지 않은 쪽으로 통과
             sure = (o1 and not u1) or (o2 and not u2)
             out.append({'ok': o1 or o2, 'both': o1 and o2, 'sure': sure, 'r1': a, 'r2': b, 'd': min(d1, d2), 'd1': d1, 'd2': d2})
+        return out
+
+class Whisper:
+    """세 번째 인식기 Whisper small(일본어 지정): 고르는 데 쓴 두 인식기와 따로 받아 적어 한 번 더 확인 (make-audio-google.py --whisper)
+    가나 한 글자는 두 인식기가 비슷한 소리(ぐ/く, む/ぬ, にゅ/に 등)를 함께 놓칠 때가 있어, 성격이 다른 인식기의 표를 하나 더 받음.
+    한자로 적으면(中·主·牛) 읽기를 하나로 정할 수 없어 맞아도 '안 맞음'으로 나오므로, 표를 못 받은 것일 뿐 틀렸다는 뜻은 아님
+    모델: https://github.com/k2-fsa/sherpa-onnx/releases (asr-models) 의 sherpa-onnx-whisper-small (int8 파일)"""
+    def __init__(self, d, threads=4):
+        import sherpa_onnx
+        f = lambda suf: os.path.join(d, next(x for x in sorted(os.listdir(d)) if x.endswith(suf)))
+        self.rec = sherpa_onnx.OfflineRecognizer.from_whisper(encoder=f('encoder.int8.onnx'), decoder=f('decoder.int8.onnx'), tokens=f('tokens.txt'),
+                                                              language='ja', task='transcribe', num_threads=threads)
+        self.lock = threading.Lock()
+
+    def check(self, it, clips):
+        """clips: [(파형, 표본율)] → [{'ok': 맞게 받아 적음, 'r': 받아 적은 글}] (글자·단어용: 쉼에서 나누지 않음)"""
+        if not clips: return []
+        with self.lock: texts = recognize(self.rec, clips)
+        wants, surf, marks = expect(it)
+        out = []
+        for t in texts:
+            fl = []; ok = judge(it['kind'], wants, surf, t, marks, fl)[0]
+            out.append({'ok': ok and not fl, 'r': t})    # 조사 자리가 불확실(は·へ를 글자 그대로 적음)하면 표로 치지 않음
         return out

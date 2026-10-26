@@ -55,7 +55,7 @@
    - 업로드 키가 없으면 만들어서 main에 올림 (커밋 이름 `Add Google Play upload key …`)
    - 광고 ID를 아직 넣지 않았으면 **구글 시험용 광고**로 `animimi-play.aab`를 만듦
    - 그 빌드의 릴리스(`app-v1.0.N`)에 `animimi-play.aab`를 `animimi.apk`와 함께 올림
-4. **AAB 받기**: https://github.com/hyogiman/jpnst/releases → 맨 위 릴리스 → Assets → `animimi-play.aab` (약 109MB, PC에서 받는 편이 편함)
+4. **AAB 받기**: https://github.com/hyogiman/jpnst/releases → 맨 위 릴리스 → Assets → `animimi-play.aab` (약 122MB, PC에서 받는 편이 편함)
 
 > 비밀번호를 잃어버리면 키 파일을 열 수 없습니다. 그때는 키 파일을 지우고 새 비밀번호로 새 키를 만든 뒤, Play Console의 **앱 무결성(App integrity) → 앱 서명** 화면에서 업로드 키 재설정을 요청합니다(구글 처리에 며칠 걸림).
 
