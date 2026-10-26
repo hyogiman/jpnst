@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <meta name="theme-color" content="#f7f8fc" />
-<title>읽히는 한자 | 일본어 단어 플래시카드</title>
+<title>읽히는 한자 | 일본어 한자 읽기 퀴즈 · 날짜별 예복습</title>
 <style>
 :root{--bg:#f7f8fc;--panel:#fff;--text:#1d293d;--muted:#65758e;--primary:#243d71;--primary2:#3768c7;--border:#e3e9f1;--faint:#eef3fa;--good:#16785b;--warn:#b35a27;--bad:#b94451;--shadow:0 9px 32px rgba(31,54,95,.055)}
 *{box-sizing:border-box}html{font-size:16px;-webkit-text-size-adjust:100%}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,'Apple SD Gothic Neo','Noto Sans KR','Yu Gothic','Hiragino Kaku Gothic ProN',sans-serif;line-height:1.6}
@@ -19,26 +19,39 @@ button,input,select{font:inherit}button{cursor:pointer}button:disabled{cursor:de
 .list-section{padding:20px}.list-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px}.list-title h2{margin:0;font-size:18px}.word-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.word-item{border:1px solid var(--border);background:#fff;text-align:left;border-radius:10px;min-height:104px;padding:12px;display:flex;flex-direction:column;gap:2px}.word-item:hover{background:#f4f8fe;border-color:#bdd2ef}.word-jp{font-size:21px;font-weight:780;line-height:1.6}.word-jp rt{font-size:.49em;color:#6b83ad}.word-ko{color:#4f5f76;font-size:12px}.word-kana{color:#7185a5;font-size:12px}.paginator{display:flex;justify-content:center;align-items:center;gap:10px;margin-top:16px}.small-progress{height:7px;background:#eef2f6;border-radius:99px;overflow:hidden}.small-progress span{height:100%;display:block;background:#57a987}.footer{text-align:center;margin:24px 0;color:#8592a7;font-size:12px;line-height:1.65}.danger{color:#ad4150;border-color:#efc9ce}.status-banner{background:#fff3d9;color:#8f6414;border:1px solid #f0dfa9;padding:10px 13px;border-radius:10px;margin-bottom:10px;font-size:13px;display:none}
 @media(max-width:860px){.workspace{grid-template-columns:1fr}.side{order:2}.stat-row{grid-template-columns:repeat(2,1fr)}.word-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:530px){.shell{padding:16px 12px 36px}.masthead{align-items:flex-start}.brand h1{font-size:19px}.brandmark{width:42px;height:42px}.topright .mini-pill:nth-child(2){display:none}.stat{padding:11px 12px;min-height:82px}.stat .big{font-size:23px}.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:3px}.tab{padding:8px 2px;font-size:12px}.toolbar{padding:10px}.select{flex:1;min-width:130px}.search{order:3;width:100%;flex-basis:100%}.card-panel{padding:15px 13px;min-height:485px}.question{margin-top:17px}.main-jp{font-size:clamp(37px,9.3vw,57px)}.japanese-area{min-height:142px}.grades{gap:5px}.grade{font-size:12px;padding:5px 2px}.grade small{font-size:10px}.word-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.word-item{padding:10px}.word-jp{font-size:18px}.kbd-note{font-size:11px}.side{padding:16px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important}}
+
+/* 실제 읽기 퀴즈와 터치 최적화 */
+.card-panel.quiz-panel{min-height:530px}.quiz-prompt{font-size:15px;text-align:center;font-weight:750;color:#465977;margin:20px 0 8px}
+.quiz-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:10px 0 7px}
+.quiz-option{min-height:72px;padding:11px 9px;border:1.5px solid #d8e2f0;border-radius:12px;background:#fff;font-size:clamp(19px,3vw,25px);font-weight:740;color:#233a61;line-height:1.35;word-break:break-word}
+.quiz-option:not(:disabled):hover{background:#f0f6ff;border-color:#729ad7}.quiz-option.correct{border-color:#64b69a;background:#effaf4;color:#086647}.quiz-option.incorrect{border-color:#dc8390;background:#fff2f2;color:#ae3346}.quiz-option:disabled{opacity:1;cursor:default}.quiz-option em{font-style:normal;font-size:12px;margin-right:8px;color:#8a97a9}
+.quiz-feedback{min-height:30px;font-weight:800;text-align:center;font-size:16px;margin:14px 0 4px}.quiz-feedback.good{color:var(--good)}.quiz-feedback.bad{color:var(--bad)}.quiz-answer{background:#f4f8ff;border-radius:12px;margin:13px 0;padding:16px;text-align:center}.quiz-answer .reading{font-size:22px}.quiz-answer .meaning{font-size:23px}.quiz-answer .breakdown{margin-top:12px}
+.result-sub{font-size:12px;color:var(--muted);text-align:center;margin:4px 0 10px}.backup-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px}.backup-row input{width:17px;height:17px;accent-color:var(--primary2)}
+@media(max-width:530px){.quiz-options{gap:8px}.quiz-option{min-height:69px;font-size:21px}.quiz-prompt{font-size:14px}.card-panel.quiz-panel{min-height:490px}}
+/* 3.0: 날짜별 학습과 답안 해설 */
+.day-panel{padding:17px 20px;margin-bottom:15px}.day-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}.day-head h2{font-size:19px;margin:0}.day-controls{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.day-controls input{border:1px solid var(--border);border-radius:9px;min-height:42px;padding:7px 10px;background:white;color:var(--text);max-width:160px}.day-controls button{border:1px solid var(--border);background:#fff;border-radius:9px;min-height:42px;padding:8px 13px;font-weight:750}.day-legend{font-size:13px;color:var(--muted);margin:8px 0 12px}.day-tags{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:11px}.day-tag{background:#eef3fb;color:#344e74;border-radius:100px;font-size:12px;font-weight:750;padding:5px 10px}.day-word-set{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}.day-word{background:#fff;border:1px solid var(--border);border-radius:10px;text-align:left;min-height:67px;padding:9px 10px;display:flex;flex-direction:column;align-items:flex-start;gap:3px}.day-word .jp{font-size:18px;font-weight:800;line-height:1.2}.day-word .sub{font-size:11px;color:var(--muted);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}.day-word .status{font-size:11px;font-weight:700;color:#3867a2}.day-word.done{background:#edf9f3;border-color:#b7ddc6}.day-word.wrong{background:#fff4f2;border-color:#f1c9c6}.day-subhead{font-weight:800;font-size:14px;margin:13px 0 7px}.day-empty{color:var(--muted);font-size:13px;margin:8px 0}.day-open{padding:9px 13px;border-radius:9px;border:0;background:var(--primary);color:white;font-weight:750;margin-top:10px;min-height:42px}.quiz-explain{border-top:1px solid var(--border);margin:17px 0 10px;padding-top:15px}.quiz-explain h3{font-size:15px;margin:0 0 9px}.explain-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.explain-item{padding:12px;background:#f7f9fd;border:1px solid #e4eaf2;border-radius:11px;min-width:0}.explain-item.answer{background:#f0faf5;border-color:#9ed5b7}.explain-item.picked-wrong{background:#fff5f5;border-color:#e9b9bd}.explain-item .meta{font-size:11px;font-weight:750;color:#526881}.explain-item .word{font-size:20px;font-weight:800;margin:3px 0;word-wrap:break-word}.explain-item .kana{color:#395c8c;font-size:16px}.explain-item .ko{font-size:13px;color:#526178;line-height:1.45}.nav-quiz{display:flex;gap:9px;align-items:center;justify-content:space-between;margin:12px 0 0}.nav-quiz .navbtn{border:1px solid #d9e3ef;background:#fff;color:#274578;border-radius:10px;padding:10px 14px;font-weight:800;min-height:47px;flex:1}.nav-quiz .navbtn.forward{background:var(--primary);color:#fff;border-color:var(--primary)}.nav-quiz .navbtn:disabled{opacity:.4}.mini-note{font-size:12px;color:var(--muted);margin:5px 0}.day-date-info{color:var(--muted);font-size:13px}.plan-overview{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin:12px 0 4px}
+@media(max-width:860px){.day-word-set{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:530px){.day-panel{padding:13px}.day-word-set{grid-template-columns:repeat(2,minmax(0,1fr))}.day-controls{width:100%}.day-controls input{flex:1}.explain-list{grid-template-columns:1fr}.explain-item .word{font-size:19px}.day-head h2{font-size:17px}}
 </style>
 </head>
 <body>
 <div class="shell">
   <header class="masthead">
-    <div class="brand"><div class="brandmark" aria-hidden="true">漢</div><div><h1>읽히는 한자</h1><p>일본어 한자 읽기 · 나만의 플래시카드</p></div></div>
+    <div class="brand"><div class="brandmark" aria-hidden="true">漢</div><div><h1>읽히는 한자</h1><p>일본어 한자 읽기 · 실전 4지선다 퀴즈 · 날짜별 학습 계획</p></div></div>
     <div class="topright"><span class="mini-pill" id="countPill">1,000+ 단어</span><span class="mini-pill">🔒 내 브라우저에 저장</span></div>
   </header>
   <div class="status-banner" id="storageWarn" role="status"></div>
   <section class="stat-row" id="stats" aria-label="학습 통계"></section>
   <nav class="tabs" id="tabs" aria-label="학습 메뉴">
-   <button class="tab active" data-view="today">오늘 학습</button><button class="tab" data-view="due">복습</button><button class="tab" data-view="all">전체 카드</button><button class="tab" data-view="wrong">오답 노트</button>
+   <button class="tab active" data-view="today">오늘 학습</button><button class="tab" data-view="planner">날짜별 예복습</button><button class="tab" data-view="due">복습</button><button class="tab" data-view="all">전체 카드</button><button class="tab" data-view="wrong">오답 노트</button>
   </nav>
   <section class="toolbar" aria-label="학습 설정">
     <select id="category" class="select" aria-label="카테고리"><option value="">전체 분야</option></select>
-    <label class="switchline"><input type="checkbox" id="rubyToggle" checked /> 후리가나 표시</label>
+    <label class="switchline"><input type="checkbox" id="rubyToggle" checked /> 학습 카드 후리가나</label><select class="select" id="modeSel" aria-label="학습 방식"><option value="quiz">실전 읽기 퀴즈</option><option value="card">암기 카드</option></select>
     <input id="search" class="search" type="search" placeholder="한자 · 히라가나 · 한국어 검색" aria-label="단어 검색" autocomplete="off" />
   </section>
   <main id="main"></main>
-  <footer class="footer">인터넷 없이 작동하는 단일 HTML · 학습 기록은 현재 브라우저에만 보관됩니다.<br/>기기를 바꾸거나 브라우저 데이터를 지우기 전에는 JSON 백업을 이용해 주세요. · 일부 어휘는 한자보다 가나 표기가 더 자주 쓰입니다.</footer>
+  <footer class="footer">별도 로그인 없는 단일 HTML · 기록은 사용하는 브라우저마다 따로 저장됩니다.<br/>학습 도중 일주일마다 JSON 다운로드를 시도합니다. 자동 다운로드가 차단될 수 있으니 백업 폴더를 확인해 주세요. · 일부 어휘는 한자보다 가나 표기가 더 자주 쓰입니다.</footer>
 </div>
 <input type="file" id="importFile" accept=".json,application/json" hidden />
 <script>
@@ -51,14 +64,17 @@ const position={};const withinCategory={};for(const c of DECK){let n=withinCateg
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const todayKey=()=>{let d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
-function cleanState(o){let a=o&&typeof o==='object'?o:{};return {progress:a.progress&&typeof a.progress==='object'?a.progress:{},days:Array.isArray(a.days)?a.days:[],settings:{goal:[5,10,15,20,30].includes(a.settings?.goal)?a.settings.goal:10,ruby:a.settings?.ruby!==false}}}
+function cleanState(o){let a=o&&typeof o==='object'?o:{};let cfg=a.settings||{};let progress={};if(a.progress&&typeof a.progress==='object'&&!Array.isArray(a.progress)){for(const [k,v] of Object.entries(a.progress)){if(/^k\d+$/.test(k)&&Number(k.slice(1))<DECK.length&&v&&typeof v==='object'&&!Array.isArray(v))progress[k]=v}}
+let dailyPlans={};if(a.dailyPlans&&typeof a.dailyPlans==='object'&&!Array.isArray(a.dailyPlans))for(let [day,plan] of Object.entries(a.dailyPlans)){if(/^\d{4}-\d{2}-\d{2}$/.test(day)&&plan&&typeof plan==='object'){dailyPlans[day]={newIds:(Array.isArray(plan.newIds)?plan.newIds:[]).filter(id=>(/^k\d+$/.test(id)&&Number(id.slice(1))<DECK.length)).slice(0,60),reviewIds:(Array.isArray(plan.reviewIds)?plan.reviewIds:[]).filter(id=>(/^k\d+$/.test(id)&&Number(id.slice(1))<DECK.length)).slice(0,250),createdAt:Number(plan.createdAt)||0}}}
+let dayHistory={};if(a.dayHistory&&typeof a.dayHistory==='object'&&!Array.isArray(a.dayHistory))for(let [day,h] of Object.entries(a.dayHistory)){if(/^\d{4}-\d{2}-\d{2}$/.test(day)&&h&&typeof h==='object')dayHistory[day]={attempts:Number(h.attempts)||0,correct:Number(h.correct)||0,wrong:Number(h.wrong)||0,results:h.results&&typeof h.results==='object'?Object.fromEntries(Object.entries(h.results).filter(([id])=>(/^k\d+$/.test(id)&&Number(id.slice(1))<DECK.length)).slice(-250)): {}}}
+return {progress,days:Array.isArray(a.days)?a.days.slice(-400):[],dailyPlans,dayHistory,settings:{goal:[5,10,15,20,30].includes(cfg.goal)?cfg.goal:10,ruby:cfg.ruby!==false,mode:cfg.mode==='card'?'card':'quiz',autoDownload:cfg.autoDownload!==false,backupAnchor:Number(cfg.backupAnchor)||0,lastExportAt:Number(cfg.lastExportAt)||0,lastSnapshotAt:Number(cfg.lastSnapshotAt)||0}}}
 let state;let storageAvailable=true;try{state=cleanState(JSON.parse(localStorage.getItem(DKEY)||'null'))}catch(e){state=cleanState(null);storageAvailable=false}
 function save(){try{localStorage.setItem(DKEY,JSON.stringify(state));storageAvailable=true;$('storageWarn').style.display='none'}catch(e){storageAvailable=false;$('storageWarn').textContent='⚠️ 브라우저 저장이 제한돼 있어요. 기록이 유지되지 않을 수 있습니다. 일반 브라우저 창에서 열거나 JSON으로 백업해 주세요.';$('storageWarn').style.display='block'}}
-let view='today',filterCat='',filterText='',activeId=null,revealed=false,hint=false,page=1;let sessionDone=new Set();let notice='';
+let view='today',filterCat='',filterText='',activeId=null,revealed=false,hint=false,page=1;let sessionDone=new Set();let notice='';let quizOptions=null,selectedOption=null,hintUsed=false;let selectedDay=todayKey();let trail=[],trailIndex=-1;
 function pieces(src){let out=[];let re=/([^\[\]]+)(?:\[([^\]]+)\])?/g,m;while((m=re.exec(src)))out.push({text:m[1],rt:m[2]||''});return out}
 function plain(src){return src.replace(/\[[^\]]+\]/g,'')}
 function ruby(src,hidden=false){let s=pieces(src).map(p=>p.rt?`<ruby>${esc(p.text)}<rt>${esc(p.rt)}</rt></ruby>`:esc(p.text)).join('');return `<span class="${hidden?'hideruby':''}">${s}</span>`}
-const byId=id=>DECK.find(x=>x.id===id);
+const DECK_MAP=new Map(DECK.map(c=>[c.id,c]));const byId=id=>DECK_MAP.get(id);
 function prog(c){return state.progress[c.id]||null}
 function newTodayCount(){let d=todayKey();return Object.values(state.progress).filter(p=>p.firstDay===d).length}
 function dayReviewed(){let d=todayKey();return Object.values(state.progress).filter(p=>p.lastDay===d).length}
@@ -67,166 +83,105 @@ function mastered(p){return !!p&&p.streak>=4&&p.interval>=14}
 function streak(){let days=new Set(state.days);let d=new Date();if(!days.has(todayKey()))d.setDate(d.getDate()-1);let n=0;for(let i=0;i<365;i++){const k=[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');if(!days.has(k))break;n++;d.setDate(d.getDate()-1)}return n}
 function filtered(){let q=filterText.trim().toLocaleLowerCase();return DECK.filter(c=>(!filterCat||c.cat===filterCat)&&(!q||[plain(c.src),c.read,c.ko,c.cat].some(s=>s.toLocaleLowerCase().includes(q))))}
 function hash(s){let h=2166136261;for(let c of s){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}return h>>>0}
-function candidates(){let list=filtered().filter(c=>!sessionDone.has(c.id));if(view==='today'){let due=list.filter(c=>{let p=prog(c);return p&&p.due<=Date.now()}).sort((a,b)=>prog(a).due-prog(b).due);let allowance=Math.max(0,state.settings.goal-newTodayCount());let nw=list.filter(c=>!prog(c)).sort((a,b)=>position[a.id]-position[b.id]).slice(0,allowance);return [...due,...nw]}if(view==='due')return list.filter(c=>{let p=prog(c);return p&&p.due<=Date.now()}).sort((a,b)=>prog(a).due-prog(b).due);if(view==='wrong')return list.filter(c=>prog(c)?.wrong>0).sort((a,b)=>(prog(b).wrong-prog(a).wrong));return list}
-function ensureActive(){let cs=candidates();if(activeId&&cs.some(c=>c.id===activeId))return byId(activeId);activeId=cs[0]?.id||null;revealed=false;hint=false;return cs[0]||null}
+
+function dayToDate(k){const [y,m,d]=k.split('-').map(Number);return new Date(y,m-1,d,12)}
+function shiftDate(k,n){let d=dayToDate(k);d.setDate(d.getDate()+n);return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')}
+function dayEnd(k){const d=dayToDate(k);d.setHours(23,59,59,999);return +d}
+function shortDate(k){let d=dayToDate(k);return `${d.getMonth()+1}월 ${d.getDate()}일 (${['일','월','화','수','목','금','토'][d.getDay()]})`}
+function getPlan(day,create=false){let existing=state.dailyPlans[day];if(existing){if(create&&existing.newIds.length<state.settings.goal){let assigned=new Set(Object.values(state.dailyPlans).flatMap(p=>p.newIds));let add=DECK.filter(c=>!prog(c)&&!assigned.has(c.id)).sort((a,b)=>position[a.id]-position[b.id]).slice(0,state.settings.goal-existing.newIds.length);if(add.length){existing.newIds.push(...add.map(c=>c.id));save()}}if(create&&day===todayKey()){let already=new Set([...existing.newIds,...existing.reviewIds]);let later=DECK.filter(c=>prog(c)&&Number(prog(c).due||0)<=Date.now()&&!already.has(c.id)).map(c=>c.id);if(later.length){existing.reviewIds.push(...later);existing.reviewIds=existing.reviewIds.slice(0,250);save()}}return existing}
+ if(!create){let newIds=DECK.filter(c=>prog(c)?.firstDay===day).map(c=>c.id);let history=state.dayHistory[day];let reviewIds=history?Object.keys(history.results).filter(id=>!newIds.includes(id)):DECK.filter(c=>prog(c)?.lastDay===day&&!newIds.includes(c.id)).map(c=>c.id);return {newIds,reviewIds,legacy:true}}
+ let assigned=new Set(Object.values(state.dailyPlans).flatMap(p=>p.newIds));let existingToday=DECK.filter(c=>prog(c)?.firstDay===day).map(c=>c.id);
+ let newIds=[...existingToday,...DECK.filter(c=>!prog(c)&&!assigned.has(c.id)).sort((a,b)=>position[a.id]-position[b.id]).slice(0,Math.max(0,state.settings.goal-existingToday.length)).map(c=>c.id)];
+ let reviewIds=DECK.filter(c=>!newIds.includes(c.id)&&prog(c)&&Number(prog(c).due||0)<=dayEnd(day)).sort((a,b)=>Number(prog(a).due||0)-Number(prog(b).due||0)).slice(0,250).map(c=>c.id);
+ let plan={newIds,reviewIds,createdAt:Date.now()};state.dailyPlans[day]=plan;save();return plan;
+}
+function selectedPlan(){return getPlan(selectedDay,selectedDay>=todayKey()&&selectedDay<=shiftDate(todayKey(),14))}
+function planStatus(c,k){const h=state.dayHistory[k]?.results?.[c.id];if(h===0)return '오답';if(h===1)return '힌트';if(h>=2)return '정답';const p=prog(c);if(p?.firstDay===k)return '학습함';if(p?.lastDay===k)return '복습함';if(p&&k>todayKey())return '예습 완료';return '미학습'}
+function dayWords(ids,day){return ids.length?`<div class="day-word-set">${ids.map(id=>{const c=byId(id);if(!c)return '';const st=planStatus(c,day);return `<button class="day-word ${st==='오답'?'wrong':st==='정답'||st==='학습함'||st==='복습함'?'done':''}" data-open="${esc(c.id)}" title="${esc(c.ko)}"><span class="jp">${esc(plain(c.src))}</span><span class="sub">${esc(c.ko)}</span><span class="status">${st}</span></button>`}).join('')}</div>`:'<div class="day-empty">이 날짜에 배정된 카드가 없어요.</div>'}
+function dayPanel(day,compact=false){const p=getPlan(day,day>=todayKey()&&day<=shiftDate(todayKey(),14));const hist=state.dayHistory[day],isToday=day===todayKey();const attempted=hist?.attempts||0;let done=p.newIds.filter(id=>!!state.progress[id]&& (state.dayHistory[day]?.results?.[id]!==undefined||state.progress[id]?.firstDay===day)).length;
+ const showDate=!compact;return `<section class="panel day-panel" aria-label="${esc(day)} 학습 일정"><div class="day-head"><h2>${isToday?'📅 오늘 배울 단어':`📆 ${shortDate(day)} 학습 카드`}</h2>${showDate?`<div class="day-controls"><button data-day-step="-1" aria-label="전날">← 전날</button><input id="dayPicker" type="date" value="${day}" min="${shiftDate(todayKey(),-365)}" max="${shiftDate(todayKey(),14)}" aria-label="학습 날짜" /><button data-day-step="1" ${day>=shiftDate(todayKey(),14)?'disabled':''}>다음날 →</button><button id="dayTodayBtn">오늘</button></div>`:`<button id="openPlanner" class="btn-secondary">날짜별 보기 →</button>`}</div><div class="day-legend">${day>todayKey()?'예습 · 선택한 날짜의 단어를 미리 확인할 수 있어요':day<todayKey()?'복습 · 지난 학습 단어를 다시 퀴즈로 풀 수 있어요':'먼저 오늘 학습 목록을 훑어보고 퀴즈를 풀어 보세요'}</div><div class="day-tags"><span class="day-tag">새 단어 ${p.newIds.length}개</span><span class="day-tag">복습 ${p.reviewIds.length}개</span><span class="day-tag">새 단어 완료 ${done}/${p.newIds.length}</span>${attempted?`<span class="day-tag">이날 풀이 ${attempted}회</span>`:''}</div><div class="day-subhead">새로 공부할 단어</div>${dayWords(p.newIds,day)}<div class="day-subhead">이날 복습할 단어 ${p.legacy?'(기존 기록 기준)':''}</div>${dayWords(p.reviewIds,day)}${p.legacy?'<div class="mini-note">업데이트 이전 날짜는 남아 있는 최초/최근 학습 기록만 표시하므로 당시의 전체 학습 이력과 차이가 있을 수 있어요.</div>':''}${showDate?`<button id="startDayBtn" class="day-open">${day>todayKey()?'예습 퀴즈 시작':day<todayKey()?'복습 퀴즈 시작':'오늘 퀴즈 시작'} →</button>`:''}</section>`}
+function storeTrail(){if(!activeId||trailIndex<0)return;trail[trailIndex]={id:activeId,quizOptions:quizOptions?[...quizOptions]:null,selectedOption,hintUsed,hint,revealed}}
+function resetTrail(){trail=[];trailIndex=-1}
+function loadTrail(i){let s=trail[i];trailIndex=i;activeId=s.id;quizOptions=s.quizOptions?[...s.quizOptions]:null;selectedOption=s.selectedOption;hintUsed=s.hintUsed;hint=s.hint;revealed=s.revealed;render()}
+function addTrail(){if(!activeId)return;if(trailIndex>=0&&trail[trailIndex]?.id===activeId)return;trail=trail.slice(0,trailIndex+1);trail.push({id:activeId,quizOptions:null,selectedOption:null,hintUsed:false,hint:false,revealed:false});trailIndex=trail.length-1}
+function navigatePrevious(){if(trailIndex<=0)return;storeTrail();loadTrail(trailIndex-1)}
+function quizNav(done){return `<div class="nav-quiz"><button id="prevQuizBtn" class="navbtn" ${trailIndex<=0?'disabled':''}>← 이전 문제</button><button id="nextQuizBtn" class="navbtn forward" ${!done&&trailIndex>=trail.length-1?'disabled':''}>${trailIndex<trail.length-1?'다음 문제로 →':'다음 문제 →'}</button></div><div class="mini-note">이전 문제를 다시 보는 것은 기록을 중복으로 올리지 않아요.</div>`}
+
+function candidates(){let list=filtered().filter(c=>!sessionDone.has(c.id));if(view==='today'||view==='planner'){let date=view==='today'?todayKey():selectedDay;let plan=view==='today'?getPlan(date,true):selectedPlan();let ids=[...plan.reviewIds,...plan.newIds];return ids.map(byId).filter(c=>c&&!sessionDone.has(c.id)&&(!filterCat||c.cat===filterCat)&&(!filterText||[plain(c.src),c.read,c.ko].some(t=>t.toLowerCase().includes(filterText.trim().toLowerCase()))))}if(view==='due')return list.filter(c=>{let p=prog(c);return p&&p.due<=Date.now()}).sort((a,b)=>prog(a).due-prog(b).due);if(view==='wrong')return list.filter(c=>prog(c)?.wrong>0).sort((a,b)=>(prog(b).wrong-prog(a).wrong));return list}
+function ensureActive(){if(activeId&&selectedOption!==null&&state.settings.mode==='quiz')return byId(activeId);let cs=candidates();if(activeId&&cs.some(c=>c.id===activeId))return byId(activeId);activeId=cs[0]?.id||null;resetCardUI();if(activeId)addTrail();return cs[0]||null}
+function resetCardUI(){revealed=false;hint=false;selectedOption=null;hintUsed=false;quizOptions=null}
+function kanaLen(s){return [...s].length}
+function trailingKana(s){let x=plain(s).match(/[ぁ-んァ-ンー]+$/);return x?x[0]:''}
+function editDistance(a,b){let x=[...a],y=[...b],prev=Array.from({length:y.length+1},(_,i)=>i);for(let i=1;i<=x.length;i++){let next=[i];for(let j=1;j<=y.length;j++)next[j]=Math.min(next[j-1]+1,prev[j]+1,prev[j-1]+(x[i-1]===y[j-1]?0:1));prev=next}return prev[y.length]}
+function quizChoices(c){if(quizOptions)return quizOptions;
+ const desired=c.read, targetLen=kanaLen(desired), tail=trailingKana(c.src);
+ let pool=DECK.filter(x=>x.id!==c.id&&x.read!==desired&&plain(x.src)!==plain(c.src));
+ // 후리가나 없는 문제에도 보이는 가나 어미가 있다면 모든 보기의 어미를 동일하게 맞춘다.
+ const endings=[tail,desired.slice(-2),desired.slice(-1)].filter(Boolean);
+ const suffix=endings.find(s=>pool.filter(x=>x.read.endsWith(s)).length>=3)||'';
+ if(suffix)pool=pool.filter(x=>x.read.endsWith(suffix));
+ // 가능한 경우 네 보기의 길이까지 맞춰 소거법으로 풀 수 없게 한다.
+ let sameLength=pool.filter(x=>kanaLen(x.read)===targetLen);
+ let lenRestricted=sameLength.length>=3?sameLength:pool.filter(x=>Math.abs(kanaLen(x.read)-targetLen)<=1);
+ if(lenRestricted.length>=3)pool=lenRestricted;
+ pool.sort((a,b)=>{
+   const score=x=>editDistance(x.read,desired)*6+Math.abs(kanaLen(x.read)-targetLen)*5+(x.cat===c.cat?-1:0)+(x.read[0]===desired[0]?-2:0)+(hash(x.id+c.id+':'+(prog(c)?.seen||0))%19)/100;
+   return score(a)-score(b);
+ });
+ const picked=[];let seen=new Set([desired]);for(let x of pool){if(seen.has(x.read))continue;picked.push(x);seen.add(x.read);if(picked.length===3)break}
+ if(picked.length<3){for(let x of DECK){if(x.id===c.id||seen.has(x.read))continue;picked.push(x);seen.add(x.read);if(picked.length===3)break}}
+ let result=[c,...picked];let seed=hash(c.id+':'+(prog(c)?.seen||0));for(let i=result.length-1;i>0;i--){seed=(Math.imul(seed^0x9e3779b9,1664525)+1013904223)>>>0;let j=seed%(i+1);[result[i],result[j]]=[result[j],result[i]]}
+ quizOptions=result;return result;
+}
+
 function statHtml(label,big,sub){return `<div class="stat"><div class="label">${label}</div><div class="big">${big}</div><div class="sub">${sub}</div></div>`}
 function updateStats(){const studied=Object.keys(state.progress).filter(k=>k.startsWith('k')&&+k.slice(1)<DECK.length).length;let m=Object.values(state.progress).filter(mastered).length;$('stats').innerHTML=statHtml('총 단어',DECK.length.toLocaleString('ko-KR'),'한자·표현 학습 카드')+statHtml('학습한 단어',studied.toLocaleString('ko-KR'),`${Math.round(studied/DECK.length*100)}% 학습 시작`)+statHtml('지금 복습할 단어',dueCards().length.toLocaleString('ko-KR'),'틀렸거나 복습일이 된 카드')+statHtml('익숙해진 단어',m.toLocaleString('ko-KR'),`연속 정답 · ${streak()}일 연속 학습`)}
-function mainCard(c,queueLen){let p=prog(c);let br=pieces(c.src).filter(x=>x.rt&&/[\u3400-\u9fff]/.test(x.text));let chunks=br.map(x=>`<span class="piece"><strong>${esc(x.text)}</strong> ${esc(x.rt)}</span>`).join('');let showRuby=state.settings.ruby!==hint;let srcHtml=ruby(c.src,!showRuby);return `<div class="panel card-panel"><div class="card-top"><span class="smalltag">${esc(c.cat)}</span><span class="smallmeta">${queueLen}장 남음 · ${p?'학습 '+p.seen+'회':'새 단어'}</span></div><div class="question">${revealed?'읽는 법과 의미를 확인해 봐':'한자를 보고 어떻게 읽는지 떠올려 봐'}</div><div class="japanese-area"><div class="main-jp ${!showRuby?'hideruby':''}">${srcHtml}</div></div><div class="hint-row"><button type="button" id="hintBtn" class="plain">${showRuby?'후리가나 잠시 숨기기':'👀 후리가나 힌트'}</button><button type="button" id="speakBtn" class="speak" title="일본어 읽어주기">🔊 발음 듣기</button></div><div class="answer ${revealed?'revealed':''}" aria-live="polite">${revealed?`<div class="reading">${esc(c.read)}</div><div class="meaning">${esc(c.ko)}</div>${chunks?`<div class="breakdown">${chunks}</div>`:''}`:'<span class="tiny">떠올린 다음 아래에서 정답을 확인해 주세요.</span>'}</div>${revealed?`<div class="grades"><button class="grade again" data-grade="0">모름<small>1 · 10분 뒤</small></button><button class="grade hard" data-grade="1">어려움<small>2 · 빠른 복습</small></button><button class="grade good" data-grade="2">맞힘<small>3 · 간격 늘림</small></button><button class="grade easy" data-grade="3">쉬움<small>4 · 더 길게</small></button></div>`:'<button type="button" id="flipBtn" class="flipbtn">정답과 뜻 보기 <span aria-hidden="true">↗</span></button>'}<div class="kbd-note">${revealed?'1~4 숫자 키로 난이도 선택':'스페이스바: 정답 보기 · 후리가나 표시 설정 가능'}</div></div>`}
-function sideHtml(){let nt=newTodayCount(),n=state.settings.goal,reviewed=dayReviewed();let pct=Math.min(100,Math.round(nt/Math.max(1,n)*100));return `<aside class="panel side"><h3>📚 오늘의 학습</h3><div class="new-goal"><span class="tiny">새 단어 목표</span><select id="goalSel" aria-label="일일 새 단어 목표">${[5,10,15,20,30].map(x=>`<option ${x===n?'selected':''} value="${x}">${x}개 / 일</option>`).join('')}</select></div><div class="meter"><div style="width:${pct}%"></div></div><div class="muted">오늘 새로 공부한 단어 <strong>${nt}/${n}</strong> · 오늘 확인한 카드 <strong>${reviewed}</strong>개</div><div class="rule"></div><h3>💡 한자 읽기 요령</h3><div class="muted">한자 <strong>頑</strong>은 <strong>がん</strong>, <strong>張</strong>은 <strong>ば</strong>로 읽어요. 따라서 <strong>頑張る</strong>는 <strong>がんばる</strong>예요.</div><div class="muted">처음에는 후리가나를 보며 익히고, 익숙해지면 위의 <strong>후리가나 표시</strong>를 꺼서 읽어 보세요.</div><div class="muted">정답을 맞혀도 어렵게 느껴지면 <strong>어려움</strong>을 선택하세요. 틀린 카드는 더 빨리, 쉬운 카드는 더 늦게 돌아옵니다.</div><div class="rule"></div><h3>💾 백업 · 복원</h3><div class="tools"><button id="exportBtn" class="btn-secondary">↓ 기록 백업</button><button id="importBtn" class="btn-secondary">↑ 기록 복원</button><button id="resetBtn" class="btn-secondary danger">초기화</button></div><div class="notice">학습 기록은 이 브라우저에만 저장돼요. 시크릿 모드·기록 삭제·기기 변경 시 사라질 수 있어요. 정기적으로 JSON 파일로 백업해 주세요.</div><div id="statusMsg" class="note-ok">${esc(notice)}</div></aside>`}
-function emptyHtml(){let titles={today:'오늘 할 학습을 마쳤어요!',due:'지금 복습할 단어가 없어요',wrong:'오답 카드가 없어요',all:'검색 결과가 없어요'};let text={today:'목표를 늘리거나 내일 다시 새로운 단어를 공부해 보세요.',due:'시간이 지나 복습할 카드가 생기면 이곳에 표시돼요.',wrong:'틀린 카드가 쌓이면 여기서 집중적으로 복습할 수 있어요.',all:'다른 검색어나 분야를 선택해 보세요.'};return `<div class="panel empty"><span class="bigicon">${view==='today'?'🎉':'📖'}</span><h2>${titles[view]}</h2><p>${text[view]}</p><button class="btn-secondary" id="toAll">전체 단어 살펴보기</button></div>`}
+function mainCard(c,queueLen){let p=prog(c);let br=pieces(c.src).filter(x=>x.rt&&/[\u3400-\u9fff]/.test(x.text));let chunks=br.map(x=>`<span class="piece"><strong>${esc(x.text)}</strong> ${esc(x.rt)}</span>`).join('');let showRuby=state.settings.ruby!==hint;let srcHtml=ruby(c.src,!showRuby);return `<div class="panel card-panel"><div class="card-top"><span class="smalltag">${esc(c.cat)}</span><span class="smallmeta">${queueLen}장 남음 · ${p?'학습 '+p.seen+'회':'새 단어'}</span></div><div class="question">${revealed?'읽는 법과 의미를 확인해 봐':'한자를 보고 어떻게 읽는지 떠올려 봐'}</div><div class="japanese-area"><div class="main-jp ${!showRuby?'hideruby':''}">${srcHtml}</div></div><div class="hint-row"><button type="button" id="hintBtn" class="plain">${showRuby?'후리가나 잠시 숨기기':'👀 후리가나 힌트'}</button><button type="button" id="speakBtn" class="speak">🔊 발음 듣기</button></div><div class="answer ${revealed?'revealed':''}" aria-live="polite">${revealed?`<div class="reading">${esc(c.read)}</div><div class="meaning">${esc(c.ko)}</div>${chunks?`<div class="breakdown">${chunks}</div>`:''}`:'<span class="tiny">떠올린 다음 아래에서 정답을 확인해 주세요.</span>'}</div>${revealed?`<div class="grades"><button class="grade again" data-grade="0">모름<small>1 · 10분 뒤</small></button><button class="grade hard" data-grade="1">어려움<small>2 · 빠른 복습</small></button><button class="grade good" data-grade="2">맞힘<small>3 · 간격 늘림</small></button><button class="grade easy" data-grade="3">쉬움<small>4 · 더 길게</small></button></div>`:'<button type="button" id="flipBtn" class="flipbtn">정답과 뜻 보기</button>'}<div class="kbd-note">${revealed?'숫자 1~4 키로 난이도 선택':'스페이스바: 정답 보기'}</div></div>`}
+function quizCard(c,queueLen){const p=prog(c),options=quizChoices(c),done=selectedOption!==null,correct=done&&options[selectedOption].read===c.read;const detailed=pieces(c.src).filter(x=>x.rt&&/[\u3400-\u9fff]/.test(x.text)).map(x=>`<span class="piece"><strong>${esc(x.text)}</strong> ${esc(x.rt)}</span>`).join('');
+return `<div class="panel card-panel quiz-panel"><div class="card-top"><span class="smalltag">${esc(c.cat)} · 읽기 퀴즈</span><span class="smallmeta">${queueLen}장 남음 · ${p?'학습 '+p.seen+'회':'새 단어'}</span></div><div class="quiz-prompt">한자를 보고 정확한 발음을 골라봐</div><div class="japanese-area"><div class="main-jp ${!done&&!hint?'hideruby':''}">${ruby(c.src)}</div></div>${!done?`<div class="hint-row"><button type="button" id="quizHintBtn" class="plain">${hint?'힌트 사용 중 · 빠른 복습':'후리가나 힌트 보기 (맞혀도 빠른 복습)'}</button></div>`:''}<div class="quiz-options" aria-label="읽는 법 4지선다">${options.map((v,i)=>`<button class="quiz-option ${done?(v.read===c.read?'correct':(i===selectedOption?'incorrect':'')):''}" data-choice="${i}" ${done?'disabled':''}><em>${i+1}</em>${esc(v.read)}</button>`).join('')}</div>${done?`<div class="quiz-feedback ${correct?'good':'bad'}" role="status">${correct?(hintUsed?'✓ 맞혔지만 힌트를 사용했어요':'✓ 정답! 잘했어요'):'✕ 오답 · 정확한 발음과 다른 보기들도 확인해 봐요'}</div><div class="quiz-answer"><div class="reading">${esc(c.read)}</div><div class="meaning">${esc(c.ko)}</div>${detailed?`<div class="breakdown">${detailed}</div>`:''}<button type="button" id="speakBtn" class="speak" style="margin-top:14px">🔊 정답 발음 듣기</button></div><section class="quiz-explain"><h3>📖 보기 4개, 각각 어떤 단어였을까?</h3><div class="explain-list">${options.map((x,i)=>`<div class="explain-item ${x.id===c.id?'answer':i===selectedOption?'picked-wrong':''}"><div class="meta">${i+1}번 · ${x.id===c.id?'정답':i===selectedOption?'선택한 오답':'다른 단어'}</div><div class="word">${ruby(x.src)}</div><div class="kana">${esc(x.read)}</div><div class="ko">${esc(x.ko)}</div></div>`).join('')}</div></section><div class="result-sub">${correct&&!hintUsed?'정답 기록 · 복습 간격 자동 증가':'복습 필요 · 짧은 간격으로 재출제'}</div>${quizNav(true)}`:`<div class="kbd-note">발음을 선택하면 정답과 모든 보기의 뜻 공개 · 숫자 1~4 선택</div>${quizNav(false)}`}</div>`}
+
+function sideHtml(){let nt=newTodayCount(),n=state.settings.goal,reviewed=dayReviewed();let pct=Math.min(100,Math.round(nt/Math.max(1,n)*100));let last=state.settings.lastExportAt?new Date(state.settings.lastExportAt).toLocaleDateString('ko-KR'):'아직 없음';return `<aside class="panel side"><h3>📚 오늘의 학습</h3><div class="new-goal"><span class="tiny">새 단어 목표</span><select id="goalSel" aria-label="일일 새 단어 목표">${[5,10,15,20,30].map(x=>`<option ${x===n?'selected':''} value="${x}">${x}개 / 일</option>`).join('')}</select></div><div class="meter"><div style="width:${pct}%"></div></div><div class="muted">오늘 새로 공부한 단어 <strong>${nt}/${n}</strong> · 오늘 채점한 카드 <strong>${reviewed}</strong>개</div><div class="rule"></div><h3>🎯 학습 방식</h3><div class="muted"><strong>실전 읽기 퀴즈:</strong> 한자를 보고 히라가나 발음을 선택하면 자동으로 정오답을 기록해요. 힌트 사용은 완전한 정답으로 기록되지 않아요.</div><div class="muted"><strong>암기 카드:</strong> 정답을 먼저 생각한 뒤 스스로 난이도를 평가하는 보조 학습이에요.</div><div class="rule"></div><h3>💾 자동 백업 · 복원</h3><label class="backup-row"><input type="checkbox" id="autoBackupCheck" ${state.settings.autoDownload?'checked':''}/> <strong>7일마다 JSON 자동 다운로드 시도</strong></label><div class="muted">앱이 열려 있고 학습 문제를 완료했을 때 실행돼요. 브라우저가 자동 다운로드를 차단할 수 있습니다.</div><div class="muted">최근 다운로드 시도: <strong>${last}</strong> · 매일 로컬 스냅샷 최대 4개 저장</div><div class="tools"><button id="exportBtn" class="btn-secondary">↓ 지금 JSON 백업</button><button id="importBtn" class="btn-secondary">↑ JSON 복원</button><button id="snapshotBtn" class="btn-secondary">↶ 로컬 스냅샷 복원</button><button id="resetBtn" class="btn-secondary danger">초기화</button></div><div class="notice">GitHub Pages는 기기 간 진도를 동기화하지 않아요. 스냅샷도 이 기기의 브라우저 데이터 삭제 시 함께 사라질 수 있으므로, 별도 JSON 파일을 보관해 주세요.</div><div id="statusMsg" class="note-ok" role="status">${esc(notice)}</div></aside>`}
+function emptyHtml(){let titles={today:'오늘 계획한 학습을 마쳤어요!',planner:'선택한 날짜의 학습을 마쳤어요!',due:'지금 복습할 단어가 없어요',wrong:'오답 카드가 없어요',all:'검색 결과가 없어요'};let text={today:'오늘 학습 목록에서 푼 단어를 다시 확인하거나 날짜별 예복습으로 이동하세요.',planner:'위 날짜 목록에서 단어를 선택하면 다시 읽어 볼 수 있어요.',due:'복습 날짜가 되면 이곳에 표시돼요.',wrong:'틀린 카드가 쌓이면 여기서 집중적으로 복습할 수 있어요.',all:'다른 검색어나 분야를 선택해 보세요.'};return `<div class="panel empty"><span class="bigicon">${view==='today'||view==='planner'?'🎉':'📖'}</span><h2>${titles[view]}</h2><p>${text[view]}</p><button class="btn-secondary" id="toAll">전체 단어 살펴보기</button>${trailIndex>=0?`<button class="btn-secondary" id="prevQuizBtn">← 이전 문제 다시 보기</button>`:''}</div>`}
 function listHtml(){let entries=filtered();let per=30;let pages=Math.max(1,Math.ceil(entries.length/per));page=Math.max(1,Math.min(page,pages));let list=entries.slice((page-1)*per,page*per);return `<section class="panel list-section"><div class="list-title"><h2>단어 목록</h2><span class="smallmeta">${entries.length.toLocaleString()}개 검색됨</span></div><div class="word-grid">${list.map(c=>`<button class="word-item" data-open="${esc(c.id)}"><span class="word-jp">${ruby(c.src,!state.settings.ruby)}</span><span class="word-kana">${esc(c.read)}</span><span class="word-ko">${esc(c.ko)}</span><span class="tiny">${prog(c)?'✓ 학습 기록 있음':'○ 아직 학습 전'}</span></button>`).join('')}</div><div class="paginator"><button class="btn-secondary" id="prevPage" ${page===1?'disabled':''}>이전</button><span class="smallmeta">${page} / ${pages} 페이지</span><button class="btn-secondary" id="nextPage" ${page===pages?'disabled':''}>다음</button></div></section>`}
-function render(){updateStats();document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view));$('countPill').textContent=DECK.length.toLocaleString()+'개 단어';$('rubyToggle').checked=state.settings.ruby;let c=ensureActive();let main=c?mainCard(c,candidates().length):emptyHtml();$('main').innerHTML=`<div class="workspace"><div>${main}</div>${sideHtml()}</div>${view==='all'?'<div style="height:16px"></div>'+listHtml():''}`;bindButtons()}
+function render(){updateStats();document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view));$('countPill').textContent=DECK.length.toLocaleString()+'개 단어';$('rubyToggle').checked=state.settings.ruby;$('rubyToggle').disabled=state.settings.mode==='quiz';$('modeSel').value=state.settings.mode;let c=ensureActive();let main=c?(state.settings.mode==='quiz'?quizCard(c,candidates().length):mainCard(c,candidates().length)):emptyHtml();let agenda=view==='today'?dayPanel(todayKey(),true):view==='planner'?dayPanel(selectedDay,false):'';$('main').innerHTML=`${agenda}<div class="workspace"><div>${main}</div>${sideHtml()}</div>${view==='all'?'<div style="height:16px"></div>'+listHtml():''}`;bindButtons()}
 function renderKeepFocus(){render()}
-function bindButtons(){if($('hintBtn'))$('hintBtn').onclick=()=>{hint=!hint;render()};if($('flipBtn'))$('flipBtn').onclick=()=>{revealed=true;render()};if($('speakBtn'))$('speakBtn').onclick=()=>{let c=byId(activeId);if(!c)return;if(!('speechSynthesis'in window)){setNotice('이 브라우저에서는 음성 읽기를 지원하지 않아요.');return}speechSynthesis.cancel();let u=new SpeechSynthesisUtterance(c.read);u.lang='ja-JP';u.rate=.85;let jaVoices=speechSynthesis.getVoices().filter(v=>v.lang.toLowerCase().startsWith('ja'));if(jaVoices.length)u.voice=jaVoices[0];speechSynthesis.speak(u)};document.querySelectorAll('[data-grade]').forEach(b=>b.onclick=()=>grade(+b.dataset.grade));$('goalSel').onchange=e=>{state.settings.goal=+e.target.value;save();activeId=null;sessionDone.clear();render()};$('exportBtn').onclick=exportData;$('importBtn').onclick=()=>$('importFile').click();$('resetBtn').onclick=reset;let ta=$('toAll');if(ta)ta.onclick=()=>setView('all');document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{activeId=b.dataset.open;revealed=false;hint=false;window.scrollTo({top:0,behavior:'smooth'});render()});if($('prevPage'))$('prevPage').onclick=()=>{page--;render()};if($('nextPage'))$('nextPage').onclick=()=>{page++;render()}}
+function speakCard(c){if(!c)return;if(!('speechSynthesis'in window)){setNotice('브라우저에서 일본어 음성을 지원하지 않아요.');return}speechSynthesis.cancel();let u=new SpeechSynthesisUtterance(c.read);u.lang='ja-JP';u.rate=.85;let jaVoices=speechSynthesis.getVoices().filter(v=>v.lang.toLowerCase().startsWith('ja'));if(jaVoices.length)u.voice=jaVoices[0];speechSynthesis.speak(u)}
+function bindButtons(){if($('hintBtn'))$('hintBtn').onclick=()=>{hint=!hint;render()};if($('quizHintBtn'))$('quizHintBtn').onclick=()=>{hint=true;hintUsed=true;render()};if($('flipBtn'))$('flipBtn').onclick=()=>{revealed=true;render()};if($('speakBtn'))$('speakBtn').onclick=()=>speakCard(byId(activeId));
+document.querySelectorAll('[data-grade]').forEach(b=>b.onclick=()=>grade(+b.dataset.grade));document.querySelectorAll('[data-choice]').forEach(b=>b.onclick=()=>answerQuiz(+b.dataset.choice));if($('nextQuizBtn'))$('nextQuizBtn').onclick=nextQuiz;if($('prevQuizBtn'))$('prevQuizBtn').onclick=navigatePrevious;
+$('goalSel').onchange=e=>{state.settings.goal=+e.target.value;save();activeId=null;sessionDone.clear();resetTrail();resetCardUI();render()};$('exportBtn').onclick=()=>exportData(false);$('importBtn').onclick=()=>$('importFile').click();$('snapshotBtn').onclick=restoreSnapshot;$('resetBtn').onclick=reset;let auto=$('autoBackupCheck');if(auto)auto.onchange=e=>{state.settings.autoDownload=e.target.checked;save();setNotice(e.target.checked?'7일마다 학습 중 JSON 다운로드를 시도합니다.':'자동 다운로드가 꺼졌습니다. 수동 백업은 계속 사용할 수 있어요.')};let ta=$('toAll');if(ta)ta.onclick=()=>setView('all');
+document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{activeId=b.dataset.open;sessionDone.delete(activeId);resetTrail();resetCardUI();addTrail();window.scrollTo({top:0,behavior:'smooth'});render()});if($('prevPage'))$('prevPage').onclick=()=>{page--;render()};if($('nextPage'))$('nextPage').onclick=()=>{page++;render()};
+if($('openPlanner'))$('openPlanner').onclick=()=>{selectedDay=todayKey();setView('planner')};if($('dayTodayBtn'))$('dayTodayBtn').onclick=()=>changeDay(todayKey());if($('dayPicker'))$('dayPicker').onchange=e=>changeDay(e.target.value);document.querySelectorAll('[data-day-step]').forEach(b=>b.onclick=()=>changeDay(shiftDate(selectedDay,Number(b.dataset.dayStep))));if($('startDayBtn'))$('startDayBtn').onclick=()=>{sessionDone.clear();activeId=null;resetTrail();resetCardUI();render()};}
+function changeDay(d){if(!/^\d{4}-\d{2}-\d{2}$/.test(d)||d<shiftDate(todayKey(),-365)||d>shiftDate(todayKey(),14))return;selectedDay=d;activeId=null;sessionDone.clear();resetTrail();resetCardUI();render()}
+
+function answerQuiz(i){if(state.settings.mode!=='quiz'||selectedOption!==null||!activeId)return;const c=byId(activeId),opts=quizChoices(c);if(!opts[i])return;selectedOption=i;const correct=opts[i].read===c.read;recordAnswer(correct?(hintUsed?1:2):0);storeTrail();render()}
+function nextQuiz(){if(trailIndex<trail.length-1){storeTrail();loadTrail(trailIndex+1);return}if(state.settings.mode==='quiz'&&selectedOption===null)return;storeTrail();activeId=null;resetCardUI();render()}
 function setNotice(s){notice=s;let n=$('statusMsg');if(n)n.textContent=s}
-function grade(g){let c=byId(activeId);if(!c||!revealed)return;let now=Date.now(),d=todayKey();let old=prog(c);let p=old?{...old}:{seen:0,correct:0,wrong:0,streak:0,interval:0,due:0,firstDay:d};p.seen++;p.lastDay=d;p.lastAt=now;p.lastGrade=g;
-if(g===0){p.wrong++;p.streak=0;p.interval=0;p.due=now+10*60*1000}else if(g===1){p.hard=(p.hard||0)+1;p.streak=0;p.interval=Math.max(1,Math.round((p.interval||1)*.65));p.due=now+p.interval*86400000}else{p.correct++;p.streak++;p.interval=g===3?Math.max(3,Math.round((p.interval||1)*3.3)):Math.max(1,Math.round((p.interval||1)*2.3));p.due=now+p.interval*86400000}state.progress[c.id]=p;if(!state.days.includes(d))state.days.push(d);state.days=state.days.slice(-400);sessionDone.add(c.id);activeId=null;revealed=false;hint=false;save();render()}
-function setView(v){view=v;activeId=null;revealed=false;hint=false;sessionDone.clear();page=1;render()}
-function exportData(){let b=new Blob([JSON.stringify({app:'읽히는 한자',version:1,exportedAt:new Date().toISOString(),count:DECK.length,state},null,2)],{type:'application/json;charset=utf-8'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=`kanji-learning-backup-${todayKey()}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000);setNotice('학습 기록 백업 파일을 저장했어요.')}
-function reset(){if(!confirm('정말 학습 기록을 모두 초기화할까요? 이 작업은 되돌릴 수 없어요.'))return;if(!confirm('마지막 확인: 모든 정답·오답·복습 기록이 삭제됩니다. 진행할까요?'))return;let settings=state.settings;state=cleanState({settings});sessionDone.clear();activeId=null;save();setNotice('학습 기록을 초기화했어요.');render()}
-$('importFile').addEventListener('change',async e=>{let f=e.target.files?.[0];if(!f)return;try{let v=JSON.parse(await f.text());if(v?.version!==1||v?.app!=='읽히는 한자'||!v.state||typeof v.state.progress!=='object'||Array.isArray(v.state.progress))throw Error('이 앱의 백업 파일이 아닙니다.');let count=Object.keys(v.state.progress).length;if(!confirm(`백업된 학습 기록 ${count}개로 현재 기록을 교체할까요?`))return;state=cleanState(v.state);save();sessionDone.clear();activeId=null;setNotice(`복원을 완료했어요. ${count}개 카드의 기록을 불러왔어요.`);render()}catch(err){alert('백업 파일을 열 수 없어요: '+err.message)}finally{e.target.value=''}})
+function recordAnswer(g){let c=byId(activeId);if(!c)return;let now=Date.now(),d=todayKey(),old=prog(c);let p=old?{...old}:{seen:0,correct:0,wrong:0,streak:0,interval:0,due:0,firstDay:d};p.seen++;p.lastDay=d;p.lastAt=now;p.lastGrade=g;
+if(g===0){p.wrong++;p.streak=0;p.interval=0;p.due=now+10*60*1000}else if(g===1){p.hard=(p.hard||0)+1;p.streak=0;p.interval=1;p.due=now+86400000}else{p.correct++;p.streak++;p.interval=g===3?Math.max(3,Math.round((p.interval||1)*3.3)):Math.max(1,Math.round((p.interval||1)*2.3));p.due=now+p.interval*86400000}state.progress[c.id]=p;if(!state.days.includes(d))state.days.push(d);state.days=state.days.slice(-400);sessionDone.add(c.id);
+ let h=state.dayHistory[d]||{attempts:0,correct:0,wrong:0,results:{}};h.attempts++;if(g>=2)h.correct++;else h.wrong++;h.results[c.id]=g;state.dayHistory[d]=h;for(let key of Object.keys(state.dayHistory).sort().slice(0,-365))delete state.dayHistory[key];
+if(!state.settings.backupAnchor)state.settings.backupAnchor=now;save();maybeSnapshot(now);maybeWeeklyExport(now)}
+function grade(g){if(!revealed||state.settings.mode!=='card')return;recordAnswer(g);activeId=null;resetCardUI();render()}
+function setView(v){view=v;activeId=null;resetTrail();resetCardUI();sessionDone.clear();page=1;render()}
+function backupPayload(){return {app:'읽히는 한자',version:1,exportedAt:new Date().toISOString(),count:DECK.length,state}}
+function exportData(automatic=false){let now=Date.now();state.settings.lastExportAt=now;save();let b=new Blob([JSON.stringify(backupPayload(),null,2)],{type:'application/json;charset=utf-8'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=`kanji-learning-backup-${todayKey()}${automatic?'-weekly':''}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),5000);setNotice(automatic?'주간 JSON 백업 다운로드를 시도했어요. 브라우저 다운로드 목록을 확인해 주세요.':'JSON 다운로드를 시도했어요. 저장 위치를 확인해 주세요.')}
+function maybeWeeklyExport(now){const st=state.settings;if(!st.autoDownload)return;const last=st.lastExportAt||st.backupAnchor;if(last&&now-last>=7*86400000)exportData(true)}
+// IndexedDB 백업은 진행 데이터만 최대 네 장까지 유지하고, 주 브라우저 저장과 별개로 복원할 수 있습니다.
+function snapshotsDb(){return new Promise((resolve,reject)=>{if(!('indexedDB'in window))return reject(Error('IndexedDB 미지원'));let r=indexedDB.open('kanji-learning-snapshots-v1',1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains('backups'))r.result.createObjectStore('backups',{keyPath:'at'})};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
+async function maybeSnapshot(now){if(now-state.settings.lastSnapshotAt<86400000)return;try{let db=await snapshotsDb();await new Promise((resolve,reject)=>{let tx=db.transaction('backups','readwrite');tx.objectStore('backups').put({at:now,json:JSON.stringify(backupPayload())});tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});await new Promise((resolve,reject)=>{let tx=db.transaction('backups','readwrite'),st=tx.objectStore('backups'),cur=st.openCursor(null,'prev'),count=0;cur.onsuccess=()=>{let c=cur.result;if(!c)return;if(++count>4)c.delete();c.continue()};tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});db.close();state.settings.lastSnapshotAt=now;save()}catch(e){/* 저장 기능이 차단된 브라우저에서는 주 기록과 JSON 내보내기를 사용 */}}
+async function restoreSnapshot(){try{let db=await snapshotsDb();let all=await new Promise((resolve,reject)=>{let tx=db.transaction('backups','readonly'),req=tx.objectStore('backups').getAll();req.onsuccess=()=>resolve(req.result||[]);req.onerror=()=>reject(req.error)});db.close();if(!all.length){alert('복원 가능한 로컬 스냅샷이 아직 없습니다.');return}let latest=all.sort((a,b)=>b.at-a.at)[0];let obj=JSON.parse(latest.json);let count=Object.keys(obj.state.progress||{}).length;if(!confirm(`${new Date(latest.at).toLocaleString('ko-KR')}에 저장된 스냅샷(${count}개 기록)을 복원할까요? 현재 기록을 덮어씁니다.`))return;state=cleanState(obj.state);activeId=null;resetTrail();resetCardUI();sessionDone.clear();save();setNotice('최근 로컬 스냅샷을 복원했어요.');render()}catch(e){alert('로컬 스냅샷을 읽지 못했습니다. JSON 백업 파일로 복원해 주세요.')}}
+function reset(){if(!confirm('정말 학습 기록을 모두 초기화할까요? 이 작업은 되돌릴 수 없어요.'))return;if(!confirm('마지막 확인: 모든 정답·오답·복습 기록이 삭제됩니다. 진행할까요?'))return;let settings=state.settings;state=cleanState({settings});sessionDone.clear();activeId=null;resetTrail();resetCardUI();save();setNotice('학습 기록을 초기화했어요.');render()}
+$('importFile').addEventListener('change',async e=>{let f=e.target.files?.[0];if(!f)return;try{let v=JSON.parse(await f.text());if(v?.version!==1||v?.app!=='읽히는 한자'||!v.state||typeof v.state.progress!=='object'||Array.isArray(v.state.progress))throw Error('이 앱의 백업 파일이 아닙니다.');let count=Object.keys(v.state.progress).length;if(!confirm(`백업된 학습 기록 ${count}개로 현재 기록을 교체할까요?`))return;state=cleanState(v.state);save();sessionDone.clear();activeId=null;resetTrail();resetCardUI();setNotice(`복원을 완료했어요. ${count}개 카드의 기록을 불러왔어요.`);render()}catch(err){alert('백업 파일을 열 수 없어요: '+err.message)}finally{e.target.value=''}})
 $('tabs').addEventListener('click',e=>{let b=e.target.closest('[data-view]');if(b)setView(b.dataset.view)});
-$('category').addEventListener('change',e=>{filterCat=e.target.value;sessionDone.clear();activeId=null;page=1;render()});
-$('search').addEventListener('input',e=>{filterText=e.target.value;sessionDone.clear();activeId=null;page=1;render()});
+$('category').addEventListener('change',e=>{filterCat=e.target.value;sessionDone.clear();activeId=null;resetTrail();page=1;render()});
+$('search').addEventListener('input',e=>{filterText=e.target.value;sessionDone.clear();activeId=null;resetTrail();page=1;render()});
 $('rubyToggle').addEventListener('change',e=>{state.settings.ruby=e.target.checked;hint=false;save();render()});
-document.addEventListener('keydown',e=>{if(e.target.closest('input,select,textarea')||e.altKey||e.ctrlKey||e.metaKey)return;if((e.key===' '||e.key==='Enter')&&!revealed&&activeId){e.preventDefault();revealed=true;render()}else if(revealed&&['1','2','3','4'].includes(e.key)){e.preventDefault();grade(+e.key-1)}});
+$('modeSel').addEventListener('change',e=>{state.settings.mode=e.target.value==='card'?'card':'quiz';activeId=null;resetTrail();resetCardUI();sessionDone.clear();save();render()});
+document.addEventListener('keydown',e=>{if(e.target.closest('input,select,textarea,button')||e.altKey||e.ctrlKey||e.metaKey||!activeId)return;if(state.settings.mode==='quiz'){
+if(e.key==='ArrowLeft'&&trailIndex>0){e.preventDefault();navigatePrevious()}else if(e.key==='ArrowRight'&&selectedOption!==null){e.preventDefault();nextQuiz()}else if(selectedOption===null&&['1','2','3','4'].includes(e.key)){e.preventDefault();answerQuiz(+e.key-1)}else if(selectedOption!==null&&(e.key==='Enter'||e.key===' ')){e.preventDefault();nextQuiz()}else if(selectedOption===null&&e.key.toLowerCase()==='h'){e.preventDefault();hint=true;hintUsed=true;render()}
+}else if((e.key===' '||e.key==='Enter')&&!revealed){e.preventDefault();revealed=true;render()}else if(revealed&&['1','2','3','4'].includes(e.key)){e.preventDefault();grade(+e.key-1)}});
 for(let x of cats){let o=document.createElement('option');o.value=x;o.textContent=x;$('category').appendChild(o)}
 // 초기 저장 테스트는 실패하더라도 학습은 계속할 수 있습니다.
 save();render();
 </script>
-<script>(function kanjiUpgrade(){
-  const cleanBefore=cleanState;
-  cleanState=function(o){
-    const x=cleanBefore(o),s=o&&o.settings||{};
-    Object.assign(x.settings,{mode:s.mode==="card"?"card":"quiz",autoDownload:s.autoDownload!==false,backupAnchor:Number(s.backupAnchor)||0,lastExportAt:Number(s.lastExportAt)||0,lastSnapshotAt:Number(s.lastSnapshotAt)||0});
-    return x;
-  };
-  try{state=cleanState(JSON.parse(localStorage.getItem(DKEY)||"null"));}catch(_){state=cleanState(null);}
-  const css=`
-  .quiz-panel{min-height:540px}.quiz-prompt{text-align:center;font-weight:750;color:#536680;font-size:16px;margin:20px 0 6px}
-  .quiz-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0}
-  .quiz-choice{min-height:71px;padding:10px 9px;font-weight:760;font-size:clamp(19px,3vw,25px);color:#213c69;border:1.5px solid #d5e2f3;border-radius:12px;background:white}
-  .quiz-choice:not(:disabled):hover{border-color:#7197d1;background:#f1f6ff}.quiz-choice:disabled{opacity:1;cursor:default}
-  .quiz-choice.correct{background:#edf8f2;border-color:#67b394;color:#116e4a}.quiz-choice.wrong{background:#fff2f3;border-color:#dc8994;color:#b23e4f}
-  .quiz-choice small{font-size:12px;color:#8292a8;margin-right:7px}.quiz-feedback{margin:14px 0 8px;text-align:center;font-size:16px;font-weight:800}
-  .quiz-feedback.yes{color:#157252}.quiz-feedback.no{color:#b44750}
-  .quiz-solution{padding:15px;background:#f2f7ff;text-align:center;border-radius:12px;margin-top:12px}.quiz-solution .reading{font-size:21px}.quiz-solution .meaning{font-size:22px}
-  .quiz-solution .breakdown{margin-top:12px}.backup-toggle{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:720}.backup-toggle input{width:17px;height:17px}
-  @media(max-width:530px){.quiz-choice{font-size:21px;min-height:68px}.quiz-panel{min-height:515px}}`;
-  const style=document.createElement("style");style.textContent=css;document.head.appendChild(style);
-  const toolbar=document.querySelector(".toolbar");
-  toolbar.insertAdjacentHTML("beforeend",'<select id="modeSel" class="select" aria-label="학습 방식"><option value="quiz">4지선다 읽기 퀴즈</option><option value="card">암기 카드</option></select>');
-  const originalEnsure=ensureActive,originalSide=sideHtml,originalBind=bindButtons,originalSetView=setView,originalGrade=grade;
-  let chosen=null,helped=false,choices=null;
-  function resetQuiz(){chosen=null;helped=false;choices=null;}
-  function optionsFor(c){
-    if(choices)return choices;
-    const len=[...c.read].length,seen=prog(c)?.seen||0;
-    const sorted=DECK.filter(x=>x.id!==c.id&&x.read!==c.read).sort((a,b)=>{
-      const score=x=>Math.abs([...x.read].length-len)*7+(x.cat===c.cat?0:8)+(x.read[0]===c.read[0]?-4:0)+(hash(x.id+c.id+seen)%13)/13;
-      return score(a)-score(b);
-    });
-    let vals=[c.read];for(const item of sorted){if(!vals.includes(item.read))vals.push(item.read);if(vals.length===4)break;}
-    let seed=hash(c.id+":"+seen);for(let i=vals.length-1;i>0;i--){let j=seed%(i+1);[vals[i],vals[j]]=[vals[j],vals[i]];seed=Math.imul(seed^0x9e3779b9,1664525)>>>0;}
-    choices=vals;return vals;
-  }
-  ensureActive=function(){
-    if(chosen!==null&&activeId&&state.settings.mode==="quiz")return byId(activeId);
-    let old=activeId,c=originalEnsure();
-    if(old!==activeId)resetQuiz();
-    return c;
-  };
-  function quizCard(c,left){
-    const opts=optionsFor(c),answered=chosen!==null,good=answered&&opts[chosen]===c.read;
-    const chunks=pieces(c.src).filter(x=>x.rt&&/[\u3400-\u9fff]/.test(x.text)).map(x=>`<span class="piece"><strong>${esc(x.text)}</strong> ${esc(x.rt)}</span>`).join("");
-    const links=opts.map((x,i)=>`<button type="button" class="quiz-choice ${answered?(x===c.read?"correct":(i===chosen?"wrong":"")):""}" data-quiz-option="${i}" ${answered?"disabled":""}><small>${i+1}</small>${esc(x)}</button>`).join("");
-    const answer=answered?`<div class="quiz-feedback ${good?"yes":"no"}">${good?(helped?"✓ 정답이지만 힌트 사용":"✓ 정답!"): "✕ 오답! 다시 확인해 봐요"}</div><div class="quiz-solution"><div class="reading">${esc(c.read)}</div><div class="meaning">${esc(c.ko)}</div><div class="breakdown">${chunks}</div><button id="speakBtn" class="speak" style="margin-top:12px">🔊 발음 듣기</button></div><p class="kbd-note">${good&&!helped?"정답 자동 기록 · 복습 간격 증가":"짧은 간격으로 재복습 예정"}</p><button id="nextQuizBtn" class="flipbtn">다음 문제 →</button>`:`<div class="hint-row"><button id="quizHintBtn" class="plain">${helped?"후리가나 힌트 사용 중":"후리가나 힌트 보기 (완전 정답 제외)"}</button></div><p class="kbd-note">1~4 숫자 키로 답을 선택해 보세요.</p>`;
-    return `<div class="panel card-panel quiz-panel"><div class="card-top"><span class="smalltag">${esc(c.cat)} · 발음 읽기 퀴즈</span><span class="smallmeta">${left}개 남음 · ${prog(c)?'복습':'새 단어'}</span></div><div class="quiz-prompt">이 한자를 어떻게 읽을까?</div><div class="japanese-area"><div class="main-jp">${ruby(c.src,!answered&&!helped)}</div></div><div class="quiz-choices">${links}</div>${answer}</div>`;
-  }
-  sideHtml=function(){
-    let html=originalSide();
-    const last=state.settings.lastExportAt?new Date(state.settings.lastExportAt).toLocaleDateString("ko-KR"):"아직 없음";
-    const extra=`<div class="rule"></div><h3>✅ 자동 채점 · 주간 백업</h3>
-      <p class="muted">읽기 퀴즈는 정답 여부를 자동으로 기록하고, 틀린 단어를 빨리 다시 출제해요. 암기 카드는 자기평가 방식이에요.</p>
-      <label class="backup-toggle"><input type="checkbox" id="autoBackupCheck" ${state.settings.autoDownload?"checked":""}/> 7일마다 JSON 자동 다운로드 시도</label>
-      <p class="muted">마지막 다운로드 시도: ${esc(last)}. 앱이 열려 있고 학습을 완료했을 때만 작동하며, 브라우저에서 다운로드를 차단할 수 있어요.</p>
-      <div class="tools"><button id="restoreSnapshotBtn" class="btn-secondary">↶ 로컬 스냅샷 복원</button></div>
-      <p class="notice">최신 로컬 스냅샷 4개까지 보관합니다. 같은 브라우저 데이터를 삭제하면 스냅샷도 사라질 수 있고, GitHub만으로 기기 간 기록은 동기화되지 않습니다.</p>`;
-    return html.replace("</aside>",extra+"</aside>");
-  };
-  render=function(){
-    updateStats();document.querySelectorAll("[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===view));
-    $("countPill").textContent=DECK.length.toLocaleString()+"개 단어";
-    $("rubyToggle").checked=state.settings.ruby;$("rubyToggle").disabled=state.settings.mode==="quiz";
-    $("modeSel").value=state.settings.mode;
-    let c=ensureActive(),main=c?(state.settings.mode==="quiz"?quizCard(c,candidates().length):mainCard(c,candidates().length)):emptyHtml();
-    $("main").innerHTML=`<div class="workspace"><div>${main}</div>${sideHtml()}</div>${view==="all"?'<div style="height:16px"></div>'+listHtml():""}`;
-    bindButtons();
-  };
-  function afterReview(){
-    const now=Date.now();if(!state.settings.backupAnchor)state.settings.backupAnchor=now;
-    save();backupSnapshot(now);if(state.settings.autoDownload&&now-(state.settings.lastExportAt||state.settings.backupAnchor)>=7*86400000)exportData(true);
-  }
-  function markAnswer(g){
-    const c=byId(activeId),now=Date.now(),d=todayKey(),old=prog(c);
-    if(!c)return;
-    let p=old?{...old}:{seen:0,correct:0,wrong:0,streak:0,interval:0,due:0,firstDay:d};
-    p.seen++;p.lastDay=d;p.lastAt=now;p.lastGrade=g;
-    if(g===0){p.wrong++;p.streak=0;p.interval=0;p.due=now+600000}
-    else if(g===1){p.hard=(p.hard||0)+1;p.streak=0;p.interval=1;p.due=now+86400000}
-    else{p.correct++;p.streak++;p.interval=Math.max(1,Math.round((p.interval||1)*2.3));p.due=now+p.interval*86400000}
-    state.progress[c.id]=p;if(!state.days.includes(d))state.days.push(d);state.days=state.days.slice(-400);sessionDone.add(c.id);afterReview();
-  }
-  function answer(i){if(chosen!==null||state.settings.mode!=="quiz"||!activeId)return;let c=byId(activeId),o=optionsFor(c);if(!o[i])return;chosen=i;markAnswer(o[i]===c.read?(helped?1:2):0);render();}
-  function next(){activeId=null;resetQuiz();render();}
-  bindButtons=function(){
-    originalBind();
-    document.querySelectorAll("[data-quiz-option]").forEach(b=>b.onclick=()=>answer(+b.dataset.quizOption));
-    if($("quizHintBtn"))$("quizHintBtn").onclick=()=>{helped=true;render()};
-    if($("nextQuizBtn"))$("nextQuizBtn").onclick=next;
-    if($("autoBackupCheck"))$("autoBackupCheck").onchange=e=>{state.settings.autoDownload=e.target.checked;save();setNotice(e.target.checked?"주간 JSON 자동 다운로드를 켰어요.":"자동 다운로드를 껐어요.")};
-    if($("restoreSnapshotBtn"))$("restoreSnapshotBtn").onclick=restoreSnapshot;
-  };
-  const originalExport=exportData;
-  exportData=function(automatic){
-    const auto=automatic===true;state.settings.lastExportAt=Date.now();save();
-    const json=JSON.stringify({app:"읽히는 한자",version:1,exportedAt:new Date().toISOString(),count:DECK.length,state},null,2);
-    let obj=new Blob([json],{type:"application/json;charset=utf-8"}),url=URL.createObjectURL(obj),a=document.createElement("a");
-    a.href=url;a.download=`kanji-learning-backup-${todayKey()}${auto?"-weekly":""}.json`;
-    document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),6000);
-    setNotice(auto?"주간 자동 JSON 다운로드를 시도했어요. 다운로드 목록을 확인해 주세요.":"JSON 백업 다운로드를 시도했어요. 저장 위치를 확인해 주세요.");
-  };
-  function openDB(){return new Promise((resolve,reject)=>{if(!("indexedDB"in window))return reject(Error("IndexedDB 없음"));let r=indexedDB.open("kanji-learning-snapshots-v1",1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains("backups"))r.result.createObjectStore("backups",{keyPath:"at"})};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
-  async function backupSnapshot(now){
-    if(now-(state.settings.lastSnapshotAt||0)<86400000)return;
-    try{
-      let db=await openDB(),data=JSON.stringify({app:"읽히는 한자",version:1,state});
-      await new Promise((resolve,reject)=>{let tx=db.transaction("backups","readwrite");tx.objectStore("backups").put({at:now,json:data});tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});
-      await new Promise((resolve,reject)=>{let tx=db.transaction("backups","readwrite"),req=tx.objectStore("backups").openCursor(null,"prev"),n=0;req.onsuccess=()=>{let c=req.result;if(c){if(++n>4)c.delete();c.continue()}};tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});
-      db.close();state.settings.lastSnapshotAt=now;save();
-    }catch(_){}
-  }
-  async function restoreSnapshot(){
-    try{
-      const db=await openDB();
-      const arr=await new Promise((resolve,reject)=>{let r=db.transaction("backups","readonly").objectStore("backups").getAll();r.onsuccess=()=>resolve(r.result||[]);r.onerror=()=>reject(r.error)});
-      db.close();if(!arr.length){alert("복원 가능한 로컬 스냅샷이 없어요.");return;}
-      arr.sort((a,b)=>b.at-a.at);const o=JSON.parse(arr[0].json),count=Object.keys(o.state.progress||{}).length;
-      if(!confirm(`${new Date(arr[0].at).toLocaleString("ko-KR")} 백업(${count}개 기록)으로 교체할까요?`))return;
-      state=cleanState(o.state);resetQuiz();activeId=null;sessionDone.clear();save();setNotice("최근 스냅샷을 복원했어요.");render();
-    }catch(e){alert("스냅샷 복원에 실패했어요. JSON 백업을 이용해 주세요.")}
-  }
-  grade=function(g){if(state.settings.mode!=="card")return;const id=activeId;originalGrade(g);if(id&&state.progress[id])afterReview();};
-  setView=function(v){resetQuiz();originalSetView(v)};
-  $("modeSel").addEventListener("change",e=>{state.settings.mode=e.target.value==="card"?"card":"quiz";resetQuiz();sessionDone.clear();activeId=null;save();render()});
-  document.addEventListener("keydown",function(e){
-    if(state.settings.mode!=="quiz"||!activeId||e.target.closest("input,select,textarea,button")||e.altKey||e.ctrlKey||e.metaKey)return;
-    if(["1","2","3","4"].includes(e.key)&&chosen===null){e.preventDefault();e.stopImmediatePropagation();answer(+e.key-1)}
-    else if(chosen!==null&&(e.key==="Enter"||e.key===" ")){e.preventDefault();e.stopImmediatePropagation();next()}
-    else if(chosen===null&&e.key.toLowerCase()==="h"){e.preventDefault();e.stopImmediatePropagation();helped=true;render()}
-    else if(e.key===" "){e.preventDefault();e.stopImmediatePropagation();}
-  },true);
-  render();
-})();</script>
 </body>
 </html>
