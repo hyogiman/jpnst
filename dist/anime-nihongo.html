@@ -10378,8 +10378,9 @@ JP.addGramNotes({
     }
   });
   document.addEventListener('keydown', function (e) {
-    if (e.target && e.target.id === 'ansIn' && e.key === 'Enter' && !e.isComposing) { e.preventDefault(); H.inputCheck(); return; }
-    if (!run || e.target.tagName === 'INPUT') return;
+    // 일본어 자판의 변환을 확정하는 엔터는 채점하지 않음 (사파리는 이때 isComposing 대신 keyCode 229를 줌)
+    if (e.target && e.target.id === 'ansIn' && e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); H.inputCheck(); return; }
+    if (!run || e.target.tagName === 'INPUT' || e.target.tagName === 'SUMMARY') return;
     if (e.key === 'Enter') { var b = document.querySelector('.feedback [data-act="cont"]') || document.querySelector('#runFoot .btn:not(.ghost):not([disabled])'); if (b) { e.preventDefault(); b.click(); } }
     else if (/^[1-4]$/.test(e.key)) { var o = U.$$('#opts .opt')[+e.key - 1]; if (o && !run.answered) o.click(); }
   });
