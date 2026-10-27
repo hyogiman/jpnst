@@ -41,7 +41,7 @@
       prog: {}, xp: 0,
       streak: { n: 0, best: 0, last: null, freeze: 0 },
       act: {}, srs: {}, lis: '', hist: [], badges: {},  // lis: 최근 청해 문항 정오 기록 ('1'=정답, '0'=오답, 최대 50개)
-      // 누적 복습: 세트 수·답한 수·맞힌 수, 항목별 [마지막으로 나온 세트, 맞힌 수, 틀린 수], 고른 종류
+      // 복습 기록: 세트 수·답한 수·맞힌 수, 항목별 [마지막으로 나온 세트, 맞힌 수, 틀린 수], 고른 종류 (이름은 예전 '누적 복습'의 drill 그대로)
       drill: { sets: 0, ans: 0, ok: 0, seen: {}, kind: 'mix' },
       cnt: { ans: 0, ok: 0, hanamaru: 0, boss: 0, reviews: 0, combo: 0, comboBest: 0, lessonsToday: 0, lessonsDate: '' }
     };

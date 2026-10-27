@@ -582,4 +582,13 @@ input[type="range"] { accent-color: var(--ruri); width: 140px; }
 .self-ans { display: flex; flex-direction: column; gap: 8px; border: 2px dashed var(--line); border-radius: 14px; padding: 12px 14px; }
 .self-a { font-size: 20px; font-weight: 700; color: var(--ink); }
 .center { text-align: center; }
-.drill-card .seg.wide button { font-size: 13px; padding: 8px 4px; }
+/* 일본어 자판 안내 · 자주 틀리는 항목 (접기) */
+.ans-prev:empty { display: none; }
+.ans-prev { min-height: 0; font-size: 22px; }
+.kb-help { font-size: 13px; color: var(--ink-2); border-top: 1px dashed var(--line); padding-top: 8px; }
+.kb-help summary { cursor: pointer; font-weight: 700; color: var(--ruri); text-align: center; }
+.kb-help ul { margin: 8px 0 0; padding-left: 18px; line-height: 1.65; display: flex; flex-direction: column; gap: 6px; }
+.kb-help p { margin: 8px 0 0; color: var(--muted); line-height: 1.55; }
+.review-card .seg.wide button { font-size: 13px; padding: 8px 4px; }
+.weak-list { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 10px; }
+.weak-list summary { cursor: pointer; font-weight: 700; font-size: 14px; }

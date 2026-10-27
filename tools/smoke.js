@@ -23,7 +23,12 @@ const BASE = process.env.BASE || 'http://127.0.0.1:8765/index.html';
         return { k: s.k, qkind: q && !r.answered ? q.kind : null, answered: r.answered, hasFb: !!document.querySelector('.feedback'), res: r.res ? { score: r.res.score, pass: r.res.pass } : null };
       });
       if (info.done) break;
-      if (info.k === 'result') { result = info.res; await page.click('#runFoot [data-act="endRun"]'); continue; }
+      if (info.k === 'result') {
+        result = info.res;
+        // 복습 결과: '한 세트 더'로 이어 풀 수 있는지 한 번 확인한 뒤 그만두기
+        if (opts.more) { opts.more = false; const m = await page.$('#runFoot [data-act="review"]'); if (!m) { errors.push('한 세트 더 버튼이 없음'); } else { await m.click(); continue; } }
+        await page.click('#runFoot [data-act="endRun"]'); continue;
+      }
       if (info.hasFb) { await page.click('.feedback [data-act="cont"]'); continue; }
       if (info.qkind && !info.answered) {
         const wrong = opts.wrongEvery && Math.random() < opts.wrongEvery;
@@ -39,11 +44,13 @@ const BASE = process.env.BASE || 'http://127.0.0.1:8765/index.html';
           } else if (q.kind === 'match') {
             q.pairs.forEach(p => { document.querySelector('[data-act="mL"][data-id="' + p.id + '"]').click(); document.querySelector('[data-act="mR"][data-id="' + p.id + '"]').click(); });
           } else if (q.kind === 'input') {
-            // 정답을 로마자로 쳐서 입력 변환까지 함께 점검 (글자 소리 문제는 원래 로마자)
-            const inp = document.getElementById('ansIn');
-            inp.value = wrong ? 'zzzz' : JP.course.romaji(q.answers[0].k);
+            // 일본어 자판처럼 가나를 그대로 씀. 네 번에 한 번은 로마자로 쳐서 자판이 없을 때의 변환도 점검
+            const inp = document.getElementById('ansIn'), k = q.answers[0].k, n = window.__inputs || 0;
+            inp.value = wrong ? 'zzzz' : n % 4 === 3 ? JP.course.romaji(k) : k;
             inp.dispatchEvent(new Event('input', { bubbles: true }));
-            window.__inputs = (window.__inputs || 0) + 1;
+            const pv = document.getElementById('ansPrev');
+            if (!wrong && n % 4 !== 3 && pv && pv.textContent) window.__prevBad = (window.__prevBad || 0) + 1;   // 가나로 쓰면 미리 보기 없음
+            window.__inputs = n + 1;
             document.querySelector('[data-act="inputCheck"]').click();
           } else if (q.kind === 'self') {
             document.querySelector('[data-act="selfShow"]').click();
@@ -103,22 +110,44 @@ const BASE = process.env.BASE || 'http://127.0.0.1:8765/index.html';
   console.log('day review sections →', rv);
   if (!rv) errors.push('이 화 내용 다시 읽기가 비어 있음');
   await page.click('.sheet.tall [data-act="closeOverlay"]');
-  // 누적 복습: 복습 탭 카드 → 종류·난이도 → 20문항 → 한 세트 더
+  // 복습: 복습 탭의 카드 하나 → 종류·난이도 → 시작. 옛 버튼(무작위 청해·약점 집중 훈련·누적 복습 카드)이 없어야 함
   await page.click('[data-act="tab"][data-v="review"]');
   await page.waitForTimeout(150);
-  const card = await page.evaluate(() => !!document.querySelector('.drill-card'));
-  if (!card) errors.push('누적 복습 카드가 없음');
-  for (const [kind, lv] of [['mix', 'hard'], ['gram', 'mid'], ['listen', 'hard'], ['vocab', 'easy']]) {
-    await page.click('[data-act="drillKind"][data-v="' + kind + '"]');
+  const tab = await page.evaluate(() => ({ card: document.querySelectorAll('.review-card').length, starts: document.querySelectorAll('[data-act="review"]').length,
+    old: document.querySelectorAll('.drill-card, [data-act="drill"], [data-v="weak"], [data-v="due"]').length }));
+  console.log('review tab →', JSON.stringify(tab));
+  if (tab.card !== 1 || tab.starts !== 1 || tab.old) errors.push('복습 탭이 하나로 합쳐지지 않음 ' + JSON.stringify(tab));
+  // 복습할 때가 된 항목 3개를 만들어 세트 앞에 나오는지, 맞히면 기억 단계가 오르는지 확인
+  const dueIds = await page.evaluate(() => {
+    const s = JP.store.state, ids = Object.keys(s.srs).filter(id => JP.items[id] && JP.items[id].type === 'vocab').slice(0, 3);
+    ids.forEach(id => { s.srs[id] = [2, JP.U.today() - 1, 1, 0]; });
+    JP.store.save(); JP.app.render(); return ids;
+  });
+  await page.click('[data-act="reviewKind"][data-v="mix"]');
+  await page.click('[data-act="setLevel"][data-v="hard"]');
+  const hero = await page.evaluate(() => document.querySelector('.review-card .hero-num').textContent);
+  if (+hero < 3) errors.push('오늘 복습할 항목 수가 ' + hero);
+  await page.click('.review-card [data-act="review"]');
+  const inSet = await page.evaluate(ids => JP.app.state().steps[0].qs.filter(q => ids.includes(q.srsId)).length, dueIds);
+  const r0 = await playDay(null);
+  const after = await page.evaluate(ids => ids.map(id => JP.store.state.srs[id][0] + '/' + (JP.store.state.srs[id][1] - JP.U.today())), dueIds);
+  console.log('review mix hard (복습할 때가 된 것 ' + inSet + '/3) →', r0, '· 기억 단계/다음 복습까지 일수', after.join(' '));
+  if (inSet !== 3) errors.push('복습할 때가 된 항목이 세트에 다 들어가지 않음: ' + inSet);
+  if (!after.every(x => x === '3/4')) errors.push('복습할 때가 된 항목을 맞혔는데 기억 단계가 오르지 않음: ' + after.join(' '));
+  if (!r0 || r0.score < 100) errors.push('복습(mix·hard) 정답을 다 맞혔는데 ' + (r0 && r0.score) + '점');
+  for (const [kind, lv] of [['gram', 'mid'], ['listen', 'hard'], ['vocab', 'easy']]) {
+    await page.click('[data-act="tab"][data-v="review"]');
+    await page.click('[data-act="reviewKind"][data-v="' + kind + '"]');
     await page.click('[data-act="setLevel"][data-v="' + lv + '"]');
-    await page.click('.drill-card [data-act="drill"]');
-    const r = await playDay(null);
-    console.log('drill', kind, lv, '→', r);
-    if (!r || r.score < 100) errors.push('누적 복습(' + kind + '·' + lv + ') 정답을 다 맞혔는데 ' + (r && r.score) + '점');
+    await page.click('.review-card [data-act="review"]');
+    const r = await playDay(null, { more: kind === 'vocab' });
+    console.log('review', kind, lv, '→', r);
+    if (!r || r.score < 100) errors.push('복습(' + kind + '·' + lv + ') 정답을 다 맞혔는데 ' + (r && r.score) + '점');
   }
-  const inputs = await page.evaluate(() => [window.__inputs || 0, window.__selfs || 0, JSON.stringify(JP.store.state.drill.sets)]);
-  console.log('직접 입력 ' + inputs[0] + '문항 · 스스로 채점 ' + inputs[1] + '문항 · 누적 복습 세트 ' + inputs[2]);
+  const inputs = await page.evaluate(() => [window.__inputs || 0, window.__selfs || 0, JP.store.state.drill.sets, window.__prevBad || 0]);
+  console.log('직접 입력 ' + inputs[0] + '문항 · 스스로 채점 ' + inputs[1] + '문항 · 복습 세트 ' + inputs[2]);
   if (!inputs[0] || !inputs[1]) errors.push('직접 입력·스스로 채점 문제가 나오지 않음');
+  if (inputs[3]) errors.push('가나로 썼는데 미리 보기가 나온 문항 ' + inputs[3]);
   await page.evaluate(() => { JP.store.state.settings.level = 'mid'; JP.store.save(); });
   // 다른 목소리 버튼 (녹음 음성일 때만 나옴): 누르면 목소리 이름으로 바뀜
   await page.evaluate(() => JP.app.startRun(31));
@@ -132,8 +161,8 @@ const BASE = process.env.BASE || 'http://127.0.0.1:8765/index.html';
   await page.waitForTimeout(150);
   const q0 = await page.$('[data-act="quitYes"]'); if (q0) await q0.click();
   await page.click('[data-act="tab"][data-v="review"]');
-  const due = await page.$('[data-act="review"][data-v="due"]');
-  if (due) { await due.click(); await page.waitForTimeout(200); }
+  const start = await page.$('.review-card [data-act="review"]');
+  if (start) { await start.click(); await page.waitForTimeout(200); }
   const st = await page.evaluate(() => ({ xp: JP.store.state.xp, streak: JP.store.state.streak, srs: Object.keys(JP.store.state.srs).length, badges: Object.keys(JP.store.state.badges) }));
   console.log('state →', JSON.stringify(st));
   await page.evaluate(() => { const r = JP.app.state(); if (r) document.querySelector('[data-act="quit"]').click(); });

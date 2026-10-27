@@ -1,11 +1,13 @@
-/* 어려운 문제 · 누적 복습
- *  1. 입력 → 가나: 로마자(shigoto → しごと)를 가나로 바꿈. 한글 자판 그대로 쳐도(ㄴ노ㅑ…) 누른 자판으로 되돌려 바꿈
- *  2. 채점: 가나·한자 표기, 장음 표기(ー/う/お), 조사 は·へ·を를 わ·え·お로 친 것, では/じゃ 같은 차이를 구별해
- *     맞음 / 맞음(표기 주의) / 틀림으로 판정
+/* 어려운 문제 · 복습
+ *  1. 입력: 일본어 자판으로 친 가나·한자를 그대로 채점. 자판이 없을 때를 위해 로마자(shigoto)나
+ *     한글 자판 그대로 친 것(ㄴ노ㅑ…)도 누른 자판으로 되돌려 가나로 바꿈. 전각 영문·반각 가타카나도 보통 글자로
+ *  2. 채점: 가나·한자 표기, 장음 표기(ー/う/お), 조사 は·へ·を를 わ·え·お로 쓴 것, では/じゃ, 변환 후보에서
+ *     다른 한자를 고른 것 같은 차이를 구별해 맞음 / 맞음(표기 주의) / 틀림으로 판정
  *  3. 헷갈리는 보기: 소리가 비슷한 말(かき/かぎ), 같은 화에 나온 말(같은 주제), 같은 문법의 다른 예문에서 보기를 고름
  *  4. 새 문제 유형: input(직접 입력) · self(떠올린 뒤 스스로 채점) · 조각 맞추기(가짜 조각이 섞인 배열)
  *  5. 난이도: 설정의 '문제 난이도'에 따라 보기 문제를 위 유형으로 바꿈 (보기 고르기 / 섞어서 / 주관식)
- *  6. 누적 복습: 지금까지 배운 것 전체에서 20문항씩. 오래 안 본 것·자주 틀린 것을 먼저
+ *  6. 복습: 복습할 때가 된 항목(기억 단계 일정)을 먼저, 남는 자리는 지금까지 배운 것 전체에서
+ *     오래 안 본 것·자주 틀린 것으로 채워 20문항씩
  */
 (function (g) {
   var JP = g.JP, U = JP.U, C = JP.course;
@@ -88,7 +90,16 @@
     }
     return out;
   }
-  function toKana(raw) { return romajiToKana(hangulToKeys(String(raw || '').normalize ? String(raw || '').normalize('NFC') : String(raw || ''))); }
+  // 전각 영문·기호(ｓｈｉ·！)와 반각 가타카나(ｼｺﾞﾄ)를 보통 글자로 (NFKC는 한글 자모까지 바꿔 버려 범위를 나눠 처리)
+  function normWidth(s) {
+    return s.replace(/[！-～]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) - 0xFEE0); })
+      .replace(/[｡-ﾟ]+/g, function (m) { return m.normalize ? m.normalize('NFKC') : m; });
+  }
+  function toKana(raw) {
+    var s = String(raw || '');
+    if (s.normalize) s = s.normalize('NFC');
+    return romajiToKana(hangulToKeys(normWidth(s)));
+  }
 
   /* ================= 2. 채점 ================= */
   function hira(s) { return String(s).replace(/[ァ-ヶ]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) - 0x60); }); }
@@ -113,7 +124,19 @@
     return out;
   }
   var PART_SOUND = { 'は': 'わ', 'へ': 'え', 'を': 'お' };
-  // answers: [{ k: 가나 읽기, w: 한자 표기(있으면), particle: true(조사) }]
+  // 일본어 자판의 변환 후보에서 같은 소리의 다른 한자를 고른 경우(かく → 描く)를 알아보려고, 배운 단어의 한자 표기 → 읽기
+  var SURF = null;
+  function surfReadings(w) {
+    if (!SURF) {
+      SURF = {};
+      JP.all.vocab.forEach(function (v) {
+        var s = clean(String(v.w || '').replace(/[〜~]/g, ''));
+        if (s && /[㐀-鿿]/.test(s)) (SURF[s] = SURF[s] || []).push(clean(hira(v.r.replace(/[〜~]/g, ''))));
+      });
+    }
+    return SURF[w] || [];
+  }
+  // answers: [{ k: 가나 읽기, w: 한자 표기(있으면 한자로 써도 정답), particle: true(조사) }]
   function grade(raw, answers) {
     var given = toKana(raw), g0 = clean(hira(given)), r0 = clean(raw);
     var res = { ok: false, near: false, note: '', given: given };
@@ -124,7 +147,9 @@
     }
     for (i = 0; i < answers.length; i++) {
       a = answers[i]; k = clean(hira(a.k || ''));
-      if (a.particle && PART_SOUND[k] && g0 === PART_SOUND[k]) { res.ok = true; res.near = true; res.note = '조사 ' + a.k + '는 ' + ({ 'は': 'ha', 'へ': 'he', 'を': 'wo' })[k] + '로 입력해요 (소리는 ' + PART_SOUND[k] + ')'; return res; }
+      if (a.particle && PART_SOUND[k] && g0 === PART_SOUND[k]) { res.ok = true; res.near = true; res.note = '조사로 쓸 때 ' + a.k + '는 소리가 ' + PART_SOUND[k] + '지만 글자는 ' + a.k + '로 써요'; return res; }
+      // 한자 표기도 정답인 문제에서만 (한자 읽기 문제에서 보이는 한자를 그대로 옮겨 쓴 것은 정답이 아님)
+      if (a.w && clean(a.w) !== k && /[㐀-鿿]/.test(g0) && surfReadings(clean(given)).indexOf(k) >= 0) { res.ok = true; res.near = true; res.note = '읽기(' + a.k + ')는 맞아요. 이 뜻의 한자 표기: ' + a.w; return res; }
       if (k.indexOf('では') >= 0 && g0 === k.replace(/では/g, 'じゃ')) { res.ok = true; res.near = true; res.note = 'じゃ는 では를 줄인 말이에요 (정답: ' + a.k + ')'; return res; }
       if (k.indexOf('じゃ') >= 0 && g0 === k.replace(/じゃ/g, 'では')) { res.ok = true; res.near = true; res.note = 'では는 じゃ의 원래 형태예요 (정답: ' + a.k + ')'; return res; }
       if (phon(given) === phon(a.k || '')) { res.ok = true; res.near = true; res.note = '소리는 맞아요. 표기는 ' + (a.w && a.w !== a.k ? a.k + ' (' + a.w + ')' : a.k); return res; }
@@ -229,11 +254,11 @@
       answers: [{ k: v.r.replace(/[〜~]/g, '') }], answerLabel: C.escapeHtml(v.r),
       reveal: vocabReveal(v) });
   }
-  // 글자: 보고 소리 쓰기 / 듣고 글자 쓰기
-  function kanaReadInput(k) {
-    return inputQ({ item: k, section: 'kana', listening: false, type: 'kanaReadInput',
-      prompt: { big: k.c, cls: 'jp-big', q: '이 글자의 소리를 로마자로 쓰세요' }, romaji: true,
-      answers: [{ k: hira(k.c) }], answerLabel: C.escapeHtml(k.ro), reveal: { big: k.c, sub: k.ro, audio: k.c } });
+  // 글자: 보고 소리 떠올리기(정답을 보면 소리가 남) / 듣고 글자 쓰기
+  function kanaRecall(k) {
+    return selfQ({ item: k, section: 'kana', listening: false, type: 'kanaRecall',
+      prompt: { big: k.c, cls: 'jp-big', q: '이 글자의 소리를 떠올려 보세요' }, revealAudio: k.c,
+      answerHtml: C.escapeHtml(k.ro), reveal: { big: k.c, sub: k.ro, audio: k.c } });
   }
   function kanaDictation(k) {
     return inputQ({ item: k, section: 'listen', listening: true, type: 'kanaDictation',
@@ -405,7 +430,7 @@
     var graded = !!GRADED_CTX[ctx], voice = JP.speech.hasJa(), it = q.item, s = q.sent;
     var nq = null;
     switch (q.type) {
-      case 'kanaRead': nq = kanaReadInput(it); break;
+      case 'kanaRead': nq = !graded ? kanaRecall(it) : voice ? kanaDictation(it) : null; break;
       case 'kanaListen': if (voice) nq = kanaDictation(it); break;
       case 'vocabReverse': nq = lv === 'mid' && Math.random() < 0.5 ? vocabTiles(it) : vocabWrite(it); break;
       case 'vocabListen': if (voice) nq = Math.random() < 0.7 || graded ? vocabDictation(it) : vocabRecall(it, true); break;
@@ -440,7 +465,7 @@
     return qs.map(function (q) { return hardenOne(q, ctx, lv); });
   }
 
-  /* ================= 6. 누적 복습 ================= */
+  /* ================= 6. 복습 ================= */
   function drillState() {
     var s = JP.store.state;
     if (!s.drill || typeof s.drill !== 'object') s.drill = {};
@@ -463,7 +488,7 @@
     learned().forEach(function (it) { c[it.type] = (c[it.type] || 0) + 1; if (it.type === 'gram') c.ex += it.x.length + (it.more || []).length; });
     return c;
   }
-  // 오래 안 본 것(누적 복습에서 한 번도 안 나온 것이 가장 먼저) + 자주 틀린 것 + 기억 단계가 낮은 것
+  // 오래 안 본 것(복습 세트에 한 번도 안 나온 것이 가장 먼저) + 자주 틀린 것 + 기억 단계가 낮은 것
   function priority(it, d) {
     var srs = JP.store.state.srs[it.id] || [1, 0, 0, 0], seen = d.seen[it.id];
     var age = seen ? (d.sets - seen[0]) : 99;
@@ -546,47 +571,71 @@
       optCls: 'ko-opt', options: U.shuffle(opts), answer: 'A', reveal: sentReveal(s) };
   }
   var MIX = { vocab: 8, gram: 7, listen: 4, kana: 1 };
+  // 종류별로 넣는 항목 (듣기는 모든 항목을 듣기 문제로 냄)
+  var KIND_TYPES = { vocab: { vocab: 1 }, gram: { gram: 1, line: 1 }, listen: { kana: 1, vocab: 1, gram: 1, line: 1 } };
+  function fits(it, kind) {
+    var t = KIND_TYPES[kind];
+    return !!it && (!t || !!t[it.type]) && (it.type !== 'gram' || !!(it.x.length || (it.more || []).length));
+  }
+  // 복습할 때가 된 항목(기억 단계 일정) 중 고른 종류에 맞는 것: 오래 밀린 것부터
+  function dueFor(kind) { return JP.srs.due().filter(function (id) { return fits(JP.items[id], kind); }); }
+  // 고른 종류로 낼 수 있는 항목 수 (한 세트가 몇 문항인지 안내할 때 씀)
+  function available(kind) {
+    var n = learned().filter(function (it) { return fits(it, kind); }).length;
+    if (kind === 'listen') learnedDays().forEach(function (dd) { var D = JP.days[dd]; if (D) n += (D.dlg ? 1 : 0) + (D.pairs || []).length; });
+    return n;
+  }
   function buildSet(kind, n) {
     n = n || 20;
-    var d = drillState(), items = learned();
-    var by = { kana: [], vocab: [], gram: [], line: [] };
-    items.forEach(function (it) { if (by[it.type]) by[it.type].push(it); });
-    by.gram = by.gram.filter(function (gp) { return gp.x.length || (gp.more || []).length; });
-    // 듣기용: 장면 대화·소리 구별 짝(배운 화의 것)
-    var days = {}; items.forEach(function (it) { days[it.day] = 1; });
-    var dlgs = [], pairs = [];
-    Object.keys(days).forEach(function (dd) {
-      var D = JP.days[dd]; if (!D) return;
-      if (D.dlg) dlgs.push(D.dlg);
-      (D.pairs || []).forEach(function (p, i) { pairs.push({ type: 'pairItem', id: 'p' + dd + '_' + i, p: p, day: +dd, ch: D.ch }); });
-    });
-    function top(list, k) {
-      return list.map(function (it) { return [priority(it, d), it]; }).sort(function (a, b) { return b[0] - a[0]; }).slice(0, k).map(function (x) { return x[1]; });
+    var d = drillState(), listen = kind === 'listen';
+    var picks = [], have = {};
+    function push(it, listenOnly, srsId) { if (!it || have[it.id]) return; have[it.id] = 1; picks.push([it, !!listenOnly || listen, srsId]); }
+    // 1) 복습할 때가 된 것부터 (이 문항은 맞히면 기억 단계가 오르고, 틀리면 내려감)
+    dueFor(kind).slice(0, n).forEach(function (id) { push(JP.items[id], false, id); });
+    // 2) 남는 자리는 지금까지 배운 것 전체에서: 아직 안 나온 것 · 오래 안 본 것 · 자주 틀린 것 먼저
+    var left = n - picks.length;
+    if (left > 0) {
+      var by = { kana: [], vocab: [], gram: [], line: [] };
+      learned().forEach(function (it) { if (by[it.type] && !have[it.id] && fits(it, kind)) by[it.type].push(it); });
+      // 듣기용: 배운 화의 장면 대화 · 소리 구별 짝
+      var dlgs = [], pairs = [];
+      if (listen || kind === 'mix') {
+        learnedDays().forEach(function (dd) {
+          var D = JP.days[dd]; if (!D) return;
+          if (D.dlg) dlgs.push(D.dlg);
+          (D.pairs || []).forEach(function (p, i) { pairs.push({ type: 'pairItem', id: 'p' + dd + '_' + i, p: p, day: +dd, ch: D.ch }); });
+        });
+      }
+      var top = function (list, k) {
+        return list.filter(function (it) { return !have[it.id]; }).map(function (it) { return [priority(it, d), it]; })
+          .sort(function (a, b) { return b[0] - a[0]; }).slice(0, Math.max(0, k)).map(function (x) { return x[1]; });
+      };
+      var take = function (list, k, listenOnly) { top(list, k).forEach(function (it) { push(it, listenOnly); }); };
+      var share = function (x) { return Math.round(x * left / 20); };
+      if (kind === 'vocab') take(by.vocab, left);
+      else if (kind === 'gram') { take(by.gram, left - Math.min(share(4), by.line.length)); take(by.line, n - picks.length); }
+      else if (listen) {
+        take(dlgs, Math.min(share(3), dlgs.length)); take(pairs, Math.min(share(3), pairs.length));
+        take(by.vocab.concat(by.line, by.gram), n - picks.length);
+      } else {
+        var weakKana = by.kana.filter(function (k) { var r = JP.store.state.srs[k.id]; return r && (r[0] <= 2 || r[3] > r[2]); });
+        var plan = { vocab: share(MIX.vocab), gram: share(MIX.gram), listen: share(MIX.listen), kana: weakKana.length ? share(MIX.kana) : 0 };
+        if (!by.gram.length) { plan.vocab += plan.gram; plan.gram = 0; }
+        if (!by.vocab.length) { plan.gram += plan.vocab; plan.vocab = 0; }
+        take(by.vocab, plan.vocab); take(by.gram, plan.gram); take(weakKana, plan.kana);
+        var lis = by.line.concat(dlgs.length && Math.random() < 0.5 ? [U.pick(dlgs)] : [], pairs.length && Math.random() < 0.5 ? [U.pick(pairs)] : []);
+        take(lis.length ? lis : by.vocab, plan.listen, true);
+      }
+      // 모자라면 아무 배운 것으로 채움 (글자는 마지막에: 글자 단계를 지나면 따로 연습할 일이 적음)
+      var rest = U.shuffle(by.vocab.concat(by.gram, by.line)).concat(U.shuffle(by.kana));
+      for (var i = 0; i < rest.length && picks.length < n; i++) push(rest[i]);
     }
-    var picks = [];
-    function take(list, k, listenOnly) { top(list, k).forEach(function (it) { picks.push([it, listenOnly]); }); }
-    if (kind === 'vocab') take(by.vocab, n);
-    else if (kind === 'gram') take(by.gram, n);
-    else if (kind === 'listen') {
-      var lp = by.vocab.concat(by.line, by.gram);
-      take(dlgs, Math.min(3, dlgs.length), true); take(pairs, Math.min(3, pairs.length), true);
-      take(lp, n - picks.length, true);
-    } else {
-      var weakKana = by.kana.filter(function (k) { var r = JP.store.state.srs[k.id]; return r && (r[0] <= 2 || r[3] > r[2]); });
-      var plan = { vocab: MIX.vocab, gram: MIX.gram, listen: MIX.listen, kana: weakKana.length ? MIX.kana : 0 };
-      if (!by.gram.length) { plan.vocab += plan.gram; plan.gram = 0; }
-      if (!by.vocab.length) { plan.gram += plan.vocab; plan.vocab = 0; }
-      take(by.vocab, plan.vocab); take(by.gram, plan.gram);
-      take(weakKana.length ? weakKana : by.kana, plan.kana);
-      var lis = by.line.concat(dlgs.length && Math.random() < 0.5 ? [U.pick(dlgs)] : [], pairs.length && Math.random() < 0.5 ? [U.pick(pairs)] : []);
-      take(lis.length ? lis : by.vocab, plan.listen, true);
-    }
-    // 모자라면 아무 배운 것으로 채움
-    var have = {}; picks.forEach(function (p) { have[p[0].id] = 1; });
-    var rest = U.shuffle(by.vocab.concat(by.gram, by.line).filter(function (it) { return !have[it.id]; }));
-    while (picks.length < n && rest.length) picks.push([rest.shift(), kind === 'listen']);
-    var qs = U.shuffle(picks).map(function (p) { var q = makeQ(p[0], p[1]); if (q) q.drillId = p[0].id; return q; }).filter(Boolean);
-    return harden(qs.slice(0, n), 'drill');
+    var qs = picks.map(function (p) {
+      var q = makeQ(p[0], p[1]);
+      if (q) { q.drillId = p[0].id; if (p[2]) q.srsId = p[2]; }
+      return q;
+    }).filter(Boolean);
+    return harden(U.shuffle(qs).slice(0, n), 'review');
   }
   function noteAnswer(q, ok) {
     var d = drillState(), id = q.drillId;
@@ -600,8 +649,8 @@
   JP.drill = {
     toKana: toKana, hangulToKeys: hangulToKeys, romajiToKana: romajiToKana, grade: grade, phon: phon, morae: morae,
     confusableVocab: confusableVocab, sentDistractors: sentDistractors, harden: harden, hardenOne: hardenOne, level: level,
-    buildSet: buildSet, noteAnswer: noteAnswer, state: drillState, counts: counts, learnedDays: learnedDays,
-    _t: { vocabWrite: vocabWrite, vocabDictation: vocabDictation, kanjiRead: kanjiRead, kanaReadInput: kanaReadInput, kanaDictation: kanaDictation,
+    buildSet: buildSet, dueFor: dueFor, available: available, noteAnswer: noteAnswer, state: drillState, counts: counts, learnedDays: learnedDays,
+    _t: { vocabWrite: vocabWrite, vocabDictation: vocabDictation, kanjiRead: kanjiRead, kanaRecall: kanaRecall, kanaDictation: kanaDictation,
       clozeInput: clozeInput, dictCloze: dictCloze, vocabRecall: vocabRecall, sentRecall: sentRecall, gramRecall: gramRecall, gramMeaning: gramMeaning,
       orderDecoy: orderDecoy, vocabTiles: vocabTiles, clozeChoice: clozeChoice, gramTarget: gramTarget, dictTarget: dictTarget, makeQ: makeQ }
   };
