@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>アニ耳 설치하기</title>
+<meta name="description" content="アニ耳(애니 청해 일본어 180일)를 휴대폰에 설치하는 방법. 링크를 열면 안드로이드·아이폰·PC에 맞는 방법이 바로 나와요.">
+<meta name="theme-color" content="#1E50A2">
+<link rel="canonical" href="https://2nhyeok.kr/install/">
+<link rel="icon" href="../icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../icons/icon-180.png">
+<!-- 카카오톡·문자로 보냈을 때 보이는 미리보기 -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="アニ耳">
+<meta property="og:title" content="アニ耳 — 휴대폰에 설치하기">
+<meta property="og:description" content="애니 청해 일본어 180일. 링크를 열면 내 휴대폰에 맞는 설치 방법이 바로 나와요.">
+<meta property="og:url" content="https://2nhyeok.kr/install/">
+<meta property="og:image" content="https://2nhyeok.kr/install/og.png">
+<meta property="og:image:width" content="1024">
+<meta property="og:image:height" content="500">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+  /* 2nhyeok.kr/install — 누구나 휴대폰에 설치하는 안내 (앱·/apk와 같은 색) */
+  :root {
+    --paper: #F3F5FA; --card: #FFFFFF; --ink: #171A2B; --ink-2: #454B64; --muted: #767D97; --line: #DCE1EC;
+    --ruri: #1E50A2; --ruri-2: #163C7A; --ruri-soft: #E1E9F7; --on-ruri: #FFFFFF; --gold-soft: #FFF2CC; --gold: #9A6A00;
+    --ok-soft: #DDF3E6; --ok: #1B7A4A;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0F111B; --card: #181B29; --ink: #E8EBF5; --ink-2: #B4BACF; --muted: #858CA6; --line: #2C3149;
+      --ruri: #82A6EF; --ruri-2: #A9C2F6; --ruri-soft: #1C2746; --on-ruri: #0C0F1A; --gold-soft: #3A3014; --gold: #F2C14E;
+      --ok-soft: #15301F; --ok: #6FD39C;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0F111B; --card: #181B29; --ink: #E8EBF5; --ink-2: #B4BACF; --muted: #858CA6; --line: #2C3149;
+    --ruri: #82A6EF; --ruri-2: #A9C2F6; --ruri-soft: #1C2746; --on-ruri: #0C0F1A; --gold-soft: #3A3014; --gold: #F2C14E;
+    --ok-soft: #15301F; --ok: #6FD39C;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font: 16px/1.65 system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  main { max-width: 560px; margin: 0 auto; padding: calc(20px + env(safe-area-inset-top, 0px)) 16px calc(40px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 16px; }
+  header { display: flex; align-items: center; gap: 12px; }
+  header img { width: 60px; height: 60px; flex: none; }
+  h1 { font-size: 23px; line-height: 1.3; margin: 0; }
+  header p { margin: 2px 0 0; color: var(--muted); font-size: 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  h2 { font-size: 18px; line-height: 1.35; margin: 0; }
+  h2 .tag { display: inline-block; vertical-align: 2px; margin-left: 6px; font-size: 12px; font-weight: 700; color: var(--ok); background: var(--ok-soft); padding: 1px 8px; border-radius: 99px; }
+  p { margin: 0; }
+  .btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 56px; width: 100%;
+    border: 0; border-radius: 14px; background: var(--ruri); color: var(--on-ruri); text-decoration: none; cursor: pointer;
+    font: inherit; font-weight: 700; font-size: 18px; box-shadow: 0 3px 0 var(--ruri-2); padding: 0 16px;
+  }
+  .btn.ghost { background: var(--card); color: var(--ruri); border: 2px solid var(--ruri-soft); box-shadow: none; min-height: 50px; font-size: 16px; }
+  .btn svg { width: 22px; height: 22px; flex: none; }
+  .row { display: flex; gap: 8px; }
+  .row > * { flex: 1; }
+  .meta { text-align: center; color: var(--muted); font-size: 13px; }
+  .small { font-size: 14px; color: var(--ink-2); }
+  .muted { color: var(--muted); }
+  a { color: var(--ruri); }
+  code { font-size: 14px; background: var(--ruri-soft); padding: 1px 6px; border-radius: 6px; word-break: break-all; }
+  /* 기기 고르기 */
+  .seg { display: flex; background: var(--ruri-soft); border-radius: 12px; padding: 4px; gap: 4px; }
+  .seg button { flex: 1; border: 0; background: transparent; color: var(--ink-2); font: inherit; font-size: 15px; font-weight: 700; padding: 9px 4px; border-radius: 9px; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--card); color: var(--ruri); box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
+  /* 단계 */
+  ol.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; counter-reset: s; }
+  ol.steps > li { counter-increment: s; display: grid; grid-template-columns: 30px 1fr; gap: 10px; align-items: start; }
+  ol.steps > li::before { content: counter(s); width: 30px; height: 30px; border-radius: 50%; background: var(--ruri); color: var(--on-ruri); font-weight: 700; display: grid; place-items: center; font-size: 15px; }
+  .ic { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; vertical-align: -8px; margin: 0 2px; border-radius: 8px; background: var(--ruri-soft); color: var(--ruri); }
+  .ic svg { width: 18px; height: 18px; }
+  .note { background: var(--gold-soft); border: 1px solid color-mix(in srgb, var(--gold) 35%, transparent); border-radius: 14px; padding: 14px; font-size: 15px; display: flex; flex-direction: column; gap: 10px; }
+  .note b { color: var(--gold); }
+  .note .btn { font-size: 16px; min-height: 50px; white-space: nowrap; padding: 0 10px; }
+  .ok { background: var(--ok-soft); color: var(--ok); border-radius: 12px; padding: 10px 12px; font-size: 15px; font-weight: 700; }
+  .manual { border: 2px dashed var(--line); border-radius: 12px; padding: 12px; font-size: 15px; color: var(--ink-2); }
+  .manual.flash { border-color: var(--ruri); animation: flash 1.2s ease 2; }
+  @keyframes flash { 50% { background: var(--ruri-soft); } }
+  details { border-top: 1px solid var(--line); padding-top: 10px; }
+  summary { cursor: pointer; font-weight: 700; font-size: 15px; }
+  details > p, details > ul { margin: 8px 0 0; font-size: 15px; color: var(--ink-2); }
+  ul { margin: 0; padding-left: 20px; }
+  li { margin: 4px 0; }
+  .qr { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .qr img { width: 220px; height: 220px; border-radius: 12px; background: #fff; padding: 8px; border: 1px solid var(--line); image-rendering: pixelated; }
+  .url { font-size: 20px; font-weight: 700; letter-spacing: .01em; }
+  footer { text-align: center; font-size: 13px; color: var(--muted); }
+  #toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 10px 16px; border-radius: 99px; font-size: 15px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  #toast.on { opacity: 1; }
+  @media (prefers-reduced-motion: reduce) { .manual.flash { animation: none; } #toast { transition: none; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <img src="../icons/icon.svg" alt="">
+    <div>
+      <h1>アニ耳 설치하기</h1>
+      <p>애니 청해 일본어 180일 · 무료 · 하루 한 화</p>
+    </div>
+  </header>
+
+  <!-- 카카오톡·네이버·인스타그램 등 다른 앱 안의 브라우저로 열렸을 때 (설치가 안 되는 곳) -->
+  <div class="note" id="inapp" hidden>
+    <div><b id="inappTitle">지금은 다른 앱 안의 브라우저예요.</b> 여기서는 설치가 되지 않아요. <span id="inappHow">아래 버튼으로 휴대폰의 기본 브라우저에서 열어 주세요.</span></div>
+    <div class="row">
+      <a class="btn" id="openOut" href="#" hidden>브라우저로 열기</a>
+      <button class="btn ghost" type="button" data-copy>링크 복사</button>
+    </div>
+  </div>
+
+  <div class="seg" role="group" aria-label="내 기기">
+    <button type="button" data-os="android" aria-pressed="false">안드로이드</button>
+    <button type="button" data-os="ios" aria-pressed="false">아이폰</button>
+    <button type="button" data-os="pc" aria-pressed="false">컴퓨터</button>
+  </div>
+
+  <!-- ===== 안드로이드 ===== -->
+  <section class="card" data-sec="android">
+    <h2>홈 화면에 바로 설치<span class="tag">가장 쉬워요</span></h2>
+    <p class="small">버튼을 누르고 <b>설치</b>를 한 번 더 누르면 홈 화면과 앱 목록에 アニ耳 아이콘이 생겨요. 파일을 내려받지 않아 경고 창이 없고, 새 버전도 저절로 받아요.</p>
+    <button class="btn" type="button" id="pwaBtn">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M11 4h2v9.2l3.6-3.6 1.4 1.4-6 6-6-6 1.4-1.4 3.6 3.6zM5 18h14v2H5z"/></svg>
+      앱 설치하기
+    </button>
+    <div class="ok" id="pwaDone" role="status" hidden></div>
+    <div class="manual" id="pwaManual">
+      <b>설치 창이 안 뜨면</b> Chrome 오른쪽 위 <span class="ic" role="img" aria-label="점 세 개 메뉴"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="19" r="2" fill="currentColor"/></svg></span> 메뉴 → <b>앱 설치</b> 또는 <b>홈 화면에 추가</b> → <b>설치</b>를 누르세요. 이미 설치했다면 홈 화면이나 앱 목록에서 アニ耳를 찾아 여세요.
+      <span id="notChrome" hidden><br>삼성 인터넷 등 다른 브라우저라면 메뉴에서 <b>홈 화면에 추가</b>를 찾거나, <a href="#" id="toChrome">Chrome에서 열기</a>를 눌러 주세요.</span>
+    </div>
+  </section>
+
+  <section class="card" data-sec="android">
+    <h2>인터넷 없이 쓰려면: 앱 파일(APK)</h2>
+    <p class="small">음성까지 모두 들어 있는 앱 파일이에요. 비행기 모드에서도 모든 글자·음성으로 공부할 수 있어요. Play 스토어 밖의 파일이라 설치할 때 확인 창이 몇 번 나와요.</p>
+    <a class="btn ghost" href="https://github.com/hyogiman/jpnst/releases/latest/download/animimi.apk" rel="noopener">앱 파일 받기 (APK · 약 130MB)</a>
+    <p class="meta"><a href="../apk/">설치 순서 · 잘 안 될 때 보기</a></p>
+    <p class="small muted">홈 화면 앱과 앱 파일은 학습 기록이 따로 저장돼요. 옮길 때는 <b>나 → 백업 내보내기</b> 후 다른 쪽에서 <b>백업 불러오기</b>.</p>
+  </section>
+
+  <!-- ===== 아이폰·아이패드 ===== -->
+  <section class="card" data-sec="ios">
+    <h2>홈 화면에 추가하기</h2>
+    <p class="small">아이폰은 App Store 밖의 앱 파일을 설치할 수 없어서, <b>Safari의 '홈 화면에 추가'</b>로 설치해요. 홈 화면 아이콘으로 열면 앱처럼 전체 화면으로 열려요.</p>
+    <ol class="steps" id="iosSteps">
+      <li><div>아래 버튼을 눌러 <b>アニ耳를 엽니다.</b><a class="btn" href="../?from=install" style="margin-top:8px">Safari에서 アニ耳 열기</a></div></li>
+      <li id="iosShare"><div>
+        <span class="ic" role="img" aria-label="공유 버튼"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 3v12M8 7l4-4 4 4M7 10H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-1"/></svg></span> <b>공유</b> 버튼을 누릅니다.
+        <div class="small muted" style="margin-top:4px">화면 아래에 공유 버튼이 없으면(iOS 26 기본 화면) 오른쪽 아래 <span class="ic" role="img" aria-label="더 보기 버튼"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="18" cy="12" r="1.8" fill="currentColor"/></svg></span> 버튼을 먼저 누르세요. 아이패드는 화면 위쪽을 보세요.</div>
+      </div></li>
+      <li id="iosShareChrome" hidden><div>
+        주소창 오른쪽의 <span class="ic" role="img" aria-label="공유 버튼"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 3v12M8 7l4-4 4 4M7 10H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-1"/></svg></span> <b>공유</b> 버튼을 누릅니다. (iOS 16.4 이상의 Chrome)
+      </div></li>
+      <li><div>목록을 내려 <span class="ic" role="img" aria-label="홈 화면에 추가"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 8.5v7M8.5 12h7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span> <b>홈 화면에 추가</b>를 누르고, 오른쪽 위 <b>추가</b>를 누르면 끝이에요.</div></li>
+    </ol>
+    <details>
+      <summary>잘 안 될 때</summary>
+      <ul>
+        <li><b>'홈 화면에 추가'가 안 보여요</b> · 공유 목록을 끝까지 내려 보세요. 카카오톡 등 다른 앱 안에서 열었다면 Safari에서 다시 열어야 보여요.</li>
+        <li><b>Safari에서 하던 기록이 안 보여요</b> · 홈 화면 앱은 기록을 따로 저장할 수 있어요. Safari의 <b>나 → 백업 내보내기</b> 후 홈 화면 앱에서 <b>백업 불러오기</b>.</li>
+        <li><b>인터넷이 없을 때</b> · 한 번 연 화면과 받아 둔 음성은 저장돼 있어서 인터넷 없이도 열려요.</li>
+      </ul>
+    </details>
+  </section>
+
+  <!-- ===== 컴퓨터 ===== -->
+  <section class="card" data-sec="pc">
+    <h2>휴대폰으로 이 안내 열기</h2>
+    <div class="qr">
+      <img src="qr.svg" width="220" height="220" alt="2nhyeok.kr/install 로 가는 QR 코드">
+      <div class="url">2nhyeok.kr/install</div>
+      <p class="small muted" style="text-align:center">휴대폰 카메라로 QR을 비추거나 위 주소를 입력하면, 그 휴대폰에 맞는 설치 방법이 열려요.</p>
+    </div>
+    <div class="row">
+      <a class="btn ghost" href="qr.png" download="animimi-install-qr.png">QR 이미지 받기</a>
+      <a class="btn ghost" href="../">PC에서 바로 학습</a>
+    </div>
+    <button class="btn" type="button" id="pcInstall" hidden>이 컴퓨터에 앱으로 설치</button>
+  </section>
+
+  <!-- ===== 공유 ===== -->
+  <section class="card">
+    <h2>다른 사람에게 보내기</h2>
+    <p class="small">이 주소 하나만 보내면 돼요. 받는 사람의 휴대폰에 맞는 설치 방법이 저절로 나와요.</p>
+    <div class="url" style="text-align:center">2nhyeok.kr/install</div>
+    <div class="row">
+      <button class="btn" type="button" id="shareBtn">공유하기</button>
+      <button class="btn ghost" type="button" data-copy>링크 복사</button>
+    </div>
+  </section>
+
+  <footer><a href="../">웹에서 바로 하기</a> · <a href="../privacy/">개인정보 처리방침</a></footer>
+</main>
+<div id="toast" role="status" aria-live="polite"></div>
+<input id="copySrc" value="https://2nhyeok.kr/install/" readonly aria-hidden="true" tabindex="-1" style="position:absolute;left:-9999px;opacity:0">
+<script>
+(function () {
+  var LINK = 'https://2nhyeok.kr/install/';
+  var ua = navigator.userAgent || '';
+  var isIOS = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);   // 아이패드는 PC처럼 보일 때가 있음
+  var isAndroid = /Android/i.test(ua);
+  var standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+  function $(id) { return document.getElementById(id); }
+  function toast(t) { var el = $('toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(function () { el.classList.remove('on'); }, 1800); }
+  function store(k, v) { try { if (v === undefined) return sessionStorage.getItem(k); sessionStorage.setItem(k, v); } catch (e) { return null; } }
+
+  /* ---- 1. 다른 앱 안의 브라우저 ---- */
+  var APPS = [['KAKAOTALK', '카카오톡', 'kakao'], ['NAVER\\(inapp', '네이버 앱', ''], ['Instagram', '인스타그램', ''], ['FBAN|FBAV', '페이스북', ''],
+    ['Line\\/', '라인', 'line'], ['DaumApps', '다음 앱', ''], ['BAND\\/', '밴드', ''], ['everytimeApp', '에브리타임', '']];
+  var inApp = null;
+  for (var i = 0; i < APPS.length; i++) if (new RegExp(APPS[i][0], 'i').test(ua)) { inApp = { name: APPS[i][1], kind: APPS[i][2] }; break; }
+  if (!inApp && !standalone && isAndroid && /; wv\)/.test(ua)) inApp = { name: '다른 앱', kind: '' };
+  if (!inApp && !standalone && isIOS && !/Safari\//.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua)) inApp = { name: '다른 앱', kind: '' };
+  var chromeIntent = 'intent://' + location.host + location.pathname + location.search + '#Intent;scheme=https;package=com.android.chrome;end';
+  if (inApp) {
+    $('inapp').hidden = false;
+    $('inappTitle').textContent = '지금은 ' + inApp.name + ' 안의 브라우저예요.';
+    var out = $('openOut'), href = '';
+    if (inApp.kind === 'kakao') href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(location.href);   // 카카오톡: 기본 브라우저로 넘김
+    else if (inApp.kind === 'line') href = location.pathname + (location.search ? location.search + '&' : '?') + 'openExternalBrowser=1';
+    else if (isAndroid) href = chromeIntent;
+    if (href) { out.href = href; out.hidden = false; }
+    else $('inappHow').innerHTML = '오른쪽 아래(또는 위)의 <b>⋯</b>이나 <b>공유</b> 버튼에서 <b>Safari로 열기</b>를 누르세요. 안 보이면 링크를 복사해 Safari 주소창에 붙여 넣으세요.';
+    // 카카오톡은 화면이 뜬 뒤 한 번 자동으로 기본 브라우저로 넘김 (돌아와도 반복하지 않음. 안 넘어가면 위 버튼으로)
+    if (inApp.kind === 'kakao' && !store('outTried')) {
+      store('outTried', '1');
+      var go = function () { setTimeout(function () { location.href = href; }, 300); };
+      if (document.readyState === 'complete') go(); else window.addEventListener('load', go);
+    }
+  }
+
+  /* ---- 2. 기기 고르기 ---- */
+  var os = isIOS ? 'ios' : isAndroid ? 'android' : 'pc';
+  function show(which) {
+    Array.prototype.forEach.call(document.querySelectorAll('[data-sec]'), function (s) { s.hidden = s.getAttribute('data-sec') !== which; });
+    Array.prototype.forEach.call(document.querySelectorAll('.seg [data-os]'), function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-os') === which)); });
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('.seg [data-os]'), function (b) { b.addEventListener('click', function () { show(b.getAttribute('data-os')); }); });
+  show(os);
+  if (isIOS && /CriOS/.test(ua)) { $('iosShare').hidden = true; $('iosShareChrome').hidden = false; }
+  if (isAndroid && (!/Chrome\/\d/.test(ua) || /SamsungBrowser|EdgA|OPR\/|Whale|YaBrowser|MiuiBrowser|HuaweiBrowser|; wv\)/.test(ua))) {
+    $('notChrome').hidden = false; $('toChrome').href = chromeIntent;
+  }
+
+  /* ---- 3. 홈 화면 설치 (안드로이드 Chrome·삼성 인터넷, PC Chrome·Edge) ---- */
+  // 아이폰에서는 이 안내 페이지 자체가 홈 화면에 추가되지 않도록, 앱 정보(매니페스트)는 아이폰이 아닐 때만 붙임
+  if (!isIOS && !inApp) {
+    var lk = document.createElement('link'); lk.rel = 'manifest'; lk.href = '../manifest.webmanifest'; document.head.appendChild(lk);
+    if ('serviceWorker' in navigator) { try { navigator.serviceWorker.register('../sw.js').catch(function () {}); } catch (e) {} }
+  }
+  var deferred = null;
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault(); deferred = e;
+    if (os === 'pc') $('pcInstall').hidden = false;
+  });
+  function installed() {
+    deferred = null;
+    var d = $('pwaDone'); d.hidden = false; d.textContent = '설치했어요! 홈 화면(또는 앱 목록)의 アニ耳 아이콘을 눌러 시작하세요.';
+    $('pcInstall').hidden = true;
+  }
+  window.addEventListener('appinstalled', installed);
+  function promptInstall() {
+    if (!deferred) return false;
+    var ev = deferred; deferred = null;
+    ev.prompt();
+    if (ev.userChoice) ev.userChoice.then(function (c) { if (c && c.outcome === 'accepted') installed(); else toast('설치를 취소했어요. 언제든 다시 누르면 돼요.'); });
+    return true;
+  }
+  $('pwaBtn').addEventListener('click', function () {
+    if (inApp) { toast('먼저 위의 "브라우저로 열기"를 눌러 주세요'); $('inapp').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+    if (promptInstall()) return;
+    var m = $('pwaManual'); m.classList.remove('flash'); void m.offsetWidth; m.classList.add('flash');
+    m.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+  $('pcInstall').addEventListener('click', promptInstall);
+  if (standalone) installed();
+
+  /* ---- 4. 공유 · 링크 복사 ---- */
+  function copy() {
+    var done = function () { toast('링크를 복사했어요'); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(LINK).then(done, legacy);
+    else legacy();
+    function legacy() { var el = $('copySrc'); el.select(); el.setSelectionRange(0, 999); try { document.execCommand('copy'); done(); } catch (e) { toast(LINK); } }
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('[data-copy]'), function (b) { b.addEventListener('click', copy); });
+  $('shareBtn').addEventListener('click', function () {
+    if (navigator.share) navigator.share({ title: 'アニ耳 — 애니 청해 일본어 180일', text: '휴대폰에 맞는 설치 방법이 바로 나와요.', url: LINK }).catch(function () {});
+    else copy();
+  });
+})();
+</script>
+</body>
+</html>

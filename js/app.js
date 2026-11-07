@@ -129,7 +129,17 @@
   ];
 
   /* ================= UI 상태 ================= */
-  var ui = { tab: 'home', chapter: null, kanaScript: 'H', bookTab: 'vocab', bookQuery: '', bookAll: false, resetArm: false };
+  var ui = { tab: 'home', chapter: null, kanaScript: 'H', bookTab: 'vocab', bookQuery: '', bookAll: false, resetArm: false, iosHint: false };
+  // 설치 안내(2nhyeok.kr/install)에서 'Safari에서 열기'로 온 아이폰·아이패드: 마지막 단계(공유 → 홈 화면에 추가)를 화면 위에 보여 줌
+  (function () {
+    var ua = navigator.userAgent || '';
+    var ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    var standalone = navigator.standalone === true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+    if (/[?&]from=install\b/.test(location.search)) {
+      ui.iosHint = ios && !standalone && !window.JP_APP;
+      try { history.replaceState(null, '', location.pathname + location.search.replace(/[?&]from=install\b/, '').replace(/^&/, '?') + location.hash); } catch (e) {}
+    }
+  })();
   var run = null;
 
   function applyDisplayPrefs() {
@@ -215,20 +225,27 @@
 
   /* ================= 온보딩 ================= */
   function viewWelcome() {
-    return '<section class="welcome">' + logoSvg('logo') +
+    return '<section class="welcome">' + iosHintBanner() + logoSvg('logo') +
       '<div><div class="eyebrow">애니 청해 일본어 180일</div><h1>アニ耳<br>애니를 듣는 귀</h1></div>' +
       '<p class="lead">일본어를 전혀 몰라도 괜찮아요. 하루 한 화(약 20~30분)씩, 6개월 동안 글자부터 애니 대사 청해까지 갑니다.</p>' +
       '<div class="card stack">' +
       '<div class="steps-list">' +
-      '<div><span class="n">1</span>매일 한 화: 복습 → 새로 배우기 → 연습 → 애니 대사 → 인문학 한 스푼</div>' +
-      '<div><span class="n">2</span>매 화의 끝에 <b>오늘의 평가</b>(10문항, 70점 이상 통과)</div>' +
-      '<div><span class="n">3</span>7일마다 <b>보스전</b>, 30일마다 <b>승급 시험</b> — F급에서 S급까지</div>' +
-      '<div><span class="n">4</span>틀린 문제는 간격 반복(SRS)으로 알맞은 날에 다시 나와요</div>' +
+      '<div><span class="n">1</span><span>매일 한 화: 복습 → 새로 배우기 → 연습 → 애니 대사 → 인문학 한 스푼</span></div>' +
+      '<div><span class="n">2</span><span>매 화의 끝에 <b>오늘의 평가</b>(10문항, 70점 이상 통과)</span></div>' +
+      '<div><span class="n">3</span><span>7일마다 <b>보스전</b>, 30일마다 <b>승급 시험</b> — F급에서 S급까지</span></div>' +
+      '<div><span class="n">4</span><span>틀린 문제는 간격 반복(SRS)으로 알맞은 날에 다시 나와요</span></div>' +
       '</div></div>' +
       '<div class="card row"><div style="flex:1"><b>소리 확인</b><div class="small muted">버튼을 눌러 일본어 음성이 들리는지 확인하세요.</div></div>' + audioBtn('こんにちは。アニメの日本語を、いっしょに勉強しましょう。') + '</div>' +
       voiceBanner() +
       '<button class="btn block" data-act="onboard">시작하기</button>' +
       '</section>';
+  }
+  function iosHintBanner() {
+    if (!ui.iosHint) return '';
+    var chrome = /CriOS/.test(navigator.userAgent || '');
+    return '<div class="banner" role="status"><b>마지막 단계예요.</b> ' + (chrome ? '주소창 오른쪽의 <b>공유</b> 버튼' : '<b>공유</b> 버튼(화면 아래에 없으면 오른쪽 아래 <b>⋯</b> → 공유)') +
+      ' → <b>홈 화면에 추가</b> → 오른쪽 위 <b>추가</b>를 누르면 홈 화면에 アニ耳 아이콘이 생겨요.' +
+      '<div class="row" style="margin-top:8px"><button class="btn sm ghost" data-act="hideIosHint">닫기</button></div></div>';
   }
   function voiceBanner() {
     if (SP.hasJa() || !SP.checked) return '';
@@ -256,7 +273,7 @@
     var due = SRS.due().length;
     var todayN = s.cnt.lessonsDate === U.todayStr() ? s.cnt.lessonsToday : 0;
     var allDone = passedCount() >= JP.totalDays;
-    var html = voiceBanner() + updateBanner();
+    var html = iosHintBanner() + voiceBanner() + updateBanner();
     html += '<section class="today" aria-label="오늘의 에피소드">' +
       '<div class="row" style="justify-content:space-between"><span class="ep-no">第' + cur + '話 · ' + esc(ch.jp) + '</span>' +
       '<span class="type-badge ' + D.type + '">' + TYPE_ICON[D.type] + TYPE_LABEL[D.type] + '</span></div>' +
@@ -683,6 +700,7 @@
   }
   // 설치형 앱: 새 버전이 있으면 홈에 알림 (app/native.js가 JP.update를 채움)
   var APK_PAGE = 'https://2nhyeok.kr/apk/';
+  var INSTALL_URL = 'https://2nhyeok.kr/install/';         // 누구나 쓰는 설치 링크 (기기에 맞는 방법이 열림)
   var PRIVACY_URL = 'https://2nhyeok.kr/privacy/';
   // 앱 파일은 GitHub에서 바로 받음 (2nhyeok.kr 사이트에 연결이 안 돼도 내려받을 수 있게)
   var APK_URL = 'https://github.com/hyogiman/jpnst/releases/latest/download/animimi.apk';
@@ -703,6 +721,8 @@
   function installHtml() {
     if (window.JP_APP || window.top !== window.self) return '';
     return '<section class="card stack"><div class="sec-title"><h2 style="font-size:15px">휴대폰 앱으로 설치</h2><span class="jp">アプリ</span></div>' +
+      '<p class="small" style="margin:0"><b>설치 링크</b> · <b>' + INSTALL_URL.replace('https://', '').replace(/\/$/, '') + '</b> 하나만 보내면, 받는 사람의 휴대폰(안드로이드·아이폰)에 맞는 설치 방법이 바로 열려요. 안드로이드는 버튼 한 번으로 홈 화면에 설치할 수도 있어요.</p>' +
+      '<div class="row"><button class="btn sm" data-act="shareInstall">설치 링크 보내기</button><a class="btn sm ghost" href="' + INSTALL_URL + '" rel="noopener">설치 안내 열기</a></div>' +
       '<p class="small" style="margin:0"><b>Android</b> · 앱 파일(APK)을 내려받아 설치하면 인터넷 없이도 모든 글자·음성으로 학습할 수 있어요.</p>' +
       '<a class="btn block" href="' + APK_URL + '" rel="noopener">Android 앱 내려받기 (APK)</a>' +
       '<ol class="small muted" style="margin:0;padding-left:18px;line-height:1.7"><li>내려받은 <b>animimi.apk</b>를 눌러 엽니다.</li><li>처음 한 번 "출처를 알 수 없는 앱" 설치를 허용합니다 (Chrome 또는 내 파일 앱).</li><li>설치 → 열기. 새 버전도 같은 방법으로 덮어 설치하면 기록이 유지됩니다.</li></ol>' +
@@ -1273,6 +1293,13 @@
       startRun(day, el.dataset.mode);
     },
     onboard: function () { st().onboarded = true; save(); render(); },
+    hideIosHint: function () { ui.iosHint = false; render(); },
+    shareInstall: function () {
+      var done = function () { toast('설치 링크를 복사했어요. 카카오톡 등에 붙여 넣어 보내세요.'); };
+      if (navigator.share) { navigator.share({ title: 'アニ耳 — 애니 청해 일본어 180일', text: '휴대폰에 맞는 설치 방법이 바로 나와요.', url: INSTALL_URL }).catch(function () {}); return; }
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(INSTALL_URL).then(done, function () { toast(INSTALL_URL); });
+      else toast(INSTALL_URL);
+    },
     say: function (el) { say(el.dataset.t, +el.dataset.r || 1, el.classList.contains('audio-btn') ? el : null); },
     sayVoice: function (el) {
       var vs = voiceList(el.dataset.t); if (!vs.length) return;

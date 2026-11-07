@@ -29,6 +29,24 @@
 
 ## 휴대폰에서 실행하기
 
+### 누구나 쓰는 설치 링크: **https://2nhyeok.kr/install**
+다른 사람에게는 이 주소 하나만 보내면 됩니다(카카오톡·문자·메일·발표 자료). 링크를 연 기기에 맞는 방법이 저절로 나옵니다.
+
+| 연 기기 | 보이는 것 |
+|---|---|
+| 안드로이드 (Chrome) | **앱 설치하기** 버튼 → 설치 창에서 **설치** → 홈 화면·앱 목록에 아이콘 (파일 내려받기·경고 창 없음, 새 버전 자동). 설치 창이 아직 안 뜨면 Chrome ⋮ 메뉴 → 앱 설치(홈 화면에 추가) 안내. 인터넷 없이 쓰려는 사람을 위한 **앱 파일(APK)** 버튼도 함께 |
+| 안드로이드 (삼성 인터넷 등) | 같은 안내 + **Chrome에서 열기** 링크 |
+| 아이폰·아이패드 | Safari에서 **공유 → 홈 화면에 추가 → 추가** 3단계 그림 안내(iOS 26의 ⋯ 메뉴 포함, 아이폰용 Chrome은 주소창 공유 버튼). "Safari에서 アニ耳 열기"로 앱에 들어가면 화면 맨 위에 마지막 단계가 한 번 더 나옴 |
+| 카카오톡 안의 브라우저 | 화면이 뜬 뒤 **기본 브라우저로 자동으로 넘김**(`kakaotalk://web/openExternal`), 안 넘어가면 "브라우저로 열기" 버튼 |
+| 네이버·인스타그램 등 다른 앱 안 | 안드로이드는 Chrome으로 여는 버튼, 아이폰은 "Safari로 열기" 안내와 링크 복사 |
+| 컴퓨터 | 휴대폰 카메라로 찍는 **QR 코드**, QR 이미지 받기, PC에서 바로 학습 |
+
+- QR 코드: `install/qr.png`(740×740px, 발표 자료용) · `install/qr.svg`(인쇄용, 크기를 키워도 깨지지 않음). 주소를 바꾸면 `python3 tools/make-install-qr.py`(segno 필요)로 다시 만듭니다.
+- 카카오톡에 링크를 붙이면 `install/og.png`(스토어 대표 그림)가 미리보기로 뜹니다.
+- 앱의 **나 → 휴대폰 앱으로 설치**에도 **설치 링크 보내기** 버튼이 있습니다.
+- 한계: 아이폰은 App Store 밖의 앱 파일을 설치할 수 없어 "홈 화면에 추가"(웹 앱)가 유일한 방법이고, 버튼 하나로 끝낼 수는 없습니다(공유 → 홈 화면에 추가 → 추가). 진짜 "누르면 설치"는 플레이 스토어·App Store에 올렸을 때 가능합니다(아래 "구글 플레이 판").
+- 홈 화면 설치(웹 앱)와 앱 파일(APK)은 학습 기록이 따로 저장됩니다. 옮길 때는 나 → 백업 내보내기 / 백업 불러오기.
+
 ### 방법 0. Android 앱으로 설치 (추천)
 **내려받기: https://github.com/hyogiman/jpnst/releases/latest/download/animimi.apk** (항상 최신 버전)
 설치 안내 페이지: **https://2nhyeok.kr/apk** (휴대폰 Chrome 앱 주소창에 `2nhyeok.kr/apk` 입력 — 문제 해결 방법 포함)
@@ -199,6 +217,7 @@ tools/drill-test.js     입력 변환·채점·문제 생성 검사 (로마자 �
 tools/build.js          단일 파일 빌드 (dist/)
 tools/curriculum.js     docs/CURRICULUM.md 생성
 tools/make-icons.js     아이콘 PNG 생성
+tools/make-install-qr.py  설치 링크 QR 코드(install/qr.svg·qr.png) 생성
 tools/audio-texts.js    음성이 필요한 문장 목록 추출
 tools/make-audio-google.py  녹음 음성 합성 (구글 Chirp 3: HD, 목소리 4개) · 음성 인식으로 맞게 읽은 소리 고르기
 tools/asr_verify.py     녹음 발음 검사 (일본어 음성 인식 두 가지로 받아 적어 기대 읽기와 박 단위로 비교)
@@ -206,6 +225,7 @@ tools/make-audio.py     녹음 음성 합성 (VOICEVOX, 인터넷 없이 만드�
 tools/build-app.js      Android 앱용 웹 파일(www/) 만들기 — 글꼴을 앱에 넣고 서비스 워커 끔
 tools/make-android-icons.js  Android 앱 아이콘 생성
 app/native.js           앱 전용 연동 (뒤로 가기 버튼, 백업 공유, 상태 표시줄, 플레이 판 광고 배너·동의)
+install/index.html      2nhyeok.kr/install — 누구나 쓰는 설치 링크 (기기·브라우저를 알아보고 맞는 방법을 보여 줌) · qr.svg·qr.png·og.png
 apk/index.html          2nhyeok.kr/apk — Android 앱 설치 안내·문제 해결 페이지
 privacy/index.html      2nhyeok.kr/privacy — 개인정보처리방침 (플레이 판 광고 포함)
 store/                  구글 플레이 등록 글(listing-ko.md)·아이콘·대표 이미지·스크린샷
