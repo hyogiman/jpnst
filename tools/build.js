@@ -23,7 +23,7 @@ const bodyInner =
 
 const title = 'アニ耳 일본어';
 // 독립 실행 파일은 녹음 음성을 배포 사이트에서 불러오고, 아티팩트는 함께 올린 audio/ 파일을 씀
-const AUDIO_SITE = process.env.AUDIO_SITE || 'https://2nhyeok.kr/';
+const AUDIO_SITE = process.env.AUDIO_SITE || 'https://2nhyeok.kr/jpnst/';
 const bodyStandalone = bodyInner.replace('__AUDIO_BASE__', 'window.JP_AUDIO_BASE = ' + JSON.stringify(AUDIO_SITE) + ';\n');
 const bodyArtifact = bodyInner.replace('__AUDIO_BASE__', '');
 const standalone = `<!doctype html>

@@ -29,7 +29,7 @@
 
 ## 휴대폰에서 실행하기
 
-### 누구나 쓰는 설치 링크: **https://2nhyeok.kr/install**
+### 누구나 쓰는 설치 링크: **https://2nhyeok.kr/jpnst/install**
 다른 사람에게는 이 주소 하나만 보내면 됩니다(카카오톡·문자·메일·발표 자료). 링크를 연 기기에 맞는 방법이 저절로 나옵니다.
 
 | 연 기기 | 보이는 것 |
@@ -49,7 +49,7 @@
 
 ### 방법 0. Android 앱으로 설치 (추천)
 **내려받기: https://github.com/hyogiman/jpnst/releases/latest/download/animimi.apk** (항상 최신 버전)
-설치 안내 페이지: **https://2nhyeok.kr/apk** (휴대폰 Chrome 앱 주소창에 `2nhyeok.kr/apk` 입력 — 문제 해결 방법 포함)
+설치 안내 페이지: **https://2nhyeok.kr/jpnst/apk** (휴대폰 Chrome 앱 주소창에 `2nhyeok.kr/jpnst/apk` 입력 — 문제 해결 방법 포함)
 
 1. 휴대폰 Chrome으로 위 주소를 열면 `animimi.apk`가 내려받아집니다. (웹 앱의 **나 → 휴대폰 앱으로 설치** 버튼도 같은 주소)
 2. 내려받은 파일을 엽니다. 처음 한 번은 **"출처를 알 수 없는 앱 설치"** 를 허용해야 합니다. (Chrome 또는 내 파일 앱 → 허용 → 뒤로)
@@ -58,7 +58,7 @@
 - 앱 안에 모든 화면·음성(목소리 4개, 약 124MB)·글꼴이 들어 있어 **인터넷 없이도** 학습할 수 있습니다. 설치 파일은 약 140MB입니다.
 - 새 버전이 나오면 같은 주소에서 받아 **덮어 설치**하면 학습 기록이 그대로 유지됩니다. (앱을 삭제하면 기록도 지워지니 나 → 백업 내보내기를 가끔 해 두세요)
 - 앱은 인터넷에 연결되어 있을 때 6시간에 한 번 GitHub Releases의 최신 버전을 확인하고, 새 버전이 있으면 **홈 화면 맨 위에 안내**합니다. 나 → 설정 → **앱 버전**에서 지금 버전을 보고 직접 확인할 수도 있습니다. (1.0.2 이하 버전에는 이 기능이 없으니 한 번은 직접 내려받아 주세요)
-- 웹(2nhyeok.kr)에서 하던 기록 옮기기: 웹의 **나 → 백업 내보내기** → 앱의 **나 → 백업 불러오기**에서 그 파일 선택
+- 웹(2nhyeok.kr/jpnst)에서 하던 기록 옮기기: 웹의 **나 → 백업 내보내기** → 앱의 **나 → 백업 불러오기**에서 그 파일 선택
 - 앱에서는 휴대폰 뒤로 가기 버튼으로 창 닫기 → 레슨 그만하기 확인 → 홈 → 앱 종료 순서로 동작하고, 백업은 공유 창(드라이브·카카오톡 등)으로 보냅니다.
 - Play 스토어 밖에서 받은 앱이라 설치할 때 Play 프로텍트가 앱을 검사하겠냐고 물을 수 있습니다. 검사 후 설치하면 됩니다.
 - **다운로드가 100%에서 멈추면**: 카카오톡·Claude 같은 다른 앱 안의 브라우저(맞춤 탭)에서는 "그래도 다운로드할까요?" 확인 창이 가려져 멈출 수 있습니다. 알림창이나 내 파일 → 다운로드에 파일이 있는지 보고, 없으면 Chrome 앱에서 다시 받으세요.
@@ -81,16 +81,18 @@ cd android && ./gradlew assembleRelease   # → app/build/outputs/apk/release/ap
 
 - **광고**: 홈과 나(기록) 화면 아래에 Google AdMob 배너 1개. 레슨·평가 중이나 창(라이선스 등)이 열려 있을 때는 숨김. 광고 제거 판매와 보상형 광고는 없음
 - **대상**: 만 18세 이상. 광고 내용 등급은 T(청소년)까지로 제한
-- **개인정보처리방침**: https://2nhyeok.kr/privacy/ (`privacy/index.html`). 유럽 등 동의가 필요한 지역에서는 구글 동의 화면(UMP)이 뜨고, 나 → 설정의 **광고 개인정보 설정**에서 바꿀 수 있음
+- **개인정보처리방침**: https://2nhyeok.kr/jpnst/privacy/ (`privacy/index.html`). 유럽 등 동의가 필요한 지역에서는 구글 동의 화면(UMP)이 뜨고, 나 → 설정의 **광고 개인정보 설정**에서 바꿀 수 있음
 - 플레이 판에서는 GitHub 새 버전 확인을 끔(플레이가 업데이트함). 설정에 **개인정보처리방침**·**오픈소스 라이선스** 메뉴가 생김
 - **빌드**: `ANIMIMI_STORE=play node tools/build-app.js`가 `www/index.html`에 플레이 판 표시와 광고 설정을 넣음. 자동 빌드의 `play` 작업이 GitHub Secrets의 `PLAY_UPLOAD_PASSWORD`로 업로드 키(`android/keystore/animimi-upload.p12`, 이 비밀번호로 암호화)를 처음 한 번 만들고, `animimi-play.aab`를 서명해 같은 릴리스에 올림. 광고 ID는 저장소 Variables의 `ADMOB_APP_ID`·`ADMOB_BANNER_ID`(없으면 구글 시험용 광고)
 - 직접 설치판과 앱 ID는 같지만 서명이 달라 서로 덮어 설치되지 않음 → 옮길 때는 백업 내보내기 → 삭제 → 플레이에서 설치 → 백업 불러오기
 
-### 방법 1. GitHub Pages + 도메인 `2nhyeok.kr` (현재 설정)
-앱은 `main` 브랜치 루트에 있고, `CNAME` 파일에 `2nhyeok.kr`이 지정되어 있습니다.
+### 방법 1. GitHub Pages: **https://2nhyeok.kr/jpnst/** (현재 설정)
+> **주소 주의 (2026-11-08 확인)**: `2nhyeok.kr` 도메인은 계정의 대표 사이트 저장소 `hyogiman/hyogiman.github.io`(CNAME = `2nhyeok.kr`)에 연결되어 있습니다. 그래서 이 저장소를 포함한 모든 프로젝트 저장소의 Pages는 **`2nhyeok.kr/저장소이름/`** 아래에서 열리고, 이 앱은 `https://2nhyeok.kr/jpnst/`입니다(배포 기록의 사이트 주소도 9월 28일 첫 배포부터 `2nhyeok.kr/jpnst/`). 이 저장소의 `CNAME` 파일은 같은 도메인을 대표 사이트가 쓰고 있어 적용되지 않습니다. 앱·안내 페이지·문서의 주소는 모두 `/jpnst/`를 붙인 주소로 고쳤습니다.
+
+앱은 `main` 브랜치 루트에 있습니다.
 1. 저장소 **Settings → Pages** 에서 Source를 `Deploy from a branch`, 브랜치 `main`, 폴더 `/ (root)`로 저장합니다.
-2. 같은 화면의 **Custom domain**에 `2nhyeok.kr`이 들어가 있는지 확인합니다.
-3. 도메인 업체(DNS 관리)에서 아래 레코드를 추가합니다.
+2. 도메인은 대표 사이트(`hyogiman.github.io`)의 Pages 설정에서 관리합니다. 이 앱만 `2nhyeok.kr` 맨 위로 옮기려면 대표 사이트의 도메인을 떼고 이 저장소의 **Custom domain**에 넣어야 하는데, 그러면 다른 프로젝트들의 `2nhyeok.kr/저장소이름/` 주소가 모두 바뀌므로 권하지 않습니다.
+3. (참고) 도메인 업체(DNS 관리)의 레코드는 아래와 같습니다.
 
    | 호스트 | 유형 | 값 |
    |---|---|---|
@@ -102,14 +104,14 @@ cd android && ./gradlew assembleRelease   # → app/build/outputs/apk/release/ap
 
    (IPv6를 쓰려면 AAAA 레코드 `2606:50c0:8000::153`, `2606:50c0:8001::153`, `2606:50c0:8002::153`, `2606:50c0:8003::153`)
 4. DNS가 반영되면(보통 몇 분~최대 48시간) Pages 화면에서 **Enforce HTTPS**를 켭니다.
-5. 휴대폰에서 `https://2nhyeok.kr`을 열고 **홈 화면에 추가**하면 앱처럼 전체 화면으로 실행되고, 한 번 연 뒤에는 오프라인에서도 동작합니다.
+5. 휴대폰에서 `https://2nhyeok.kr/jpnst/`를 열고 **홈 화면에 추가**하면 앱처럼 전체 화면으로 실행되고, 한 번 연 뒤에는 오프라인에서도 동작합니다.
    - iPhone(Safari): 공유 버튼 → 홈 화면에 추가
    - Android(Chrome): 메뉴 → 홈 화면에 추가 / 앱 설치
 
 > 저장소가 비공개(private)라면 요금제에 따라 Pages 사용이 제한될 수 있습니다. 설정 방법은 GitHub 문서 "Managing a custom domain for your GitHub Pages site"를 참고하세요.
 
 ### 방법 2. 단일 파일로 열기
-`dist/anime-nihongo.html` 하나에 앱 전체가 들어 있습니다. 이 파일을 휴대폰으로 옮겨 브라우저에서 열면 됩니다. 글꼴과 녹음 음성은 인터넷(https://2nhyeok.kr)에서 불러오며, 연결이 없으면 기본 글꼴과 기기 음성을 씁니다.
+`dist/anime-nihongo.html` 하나에 앱 전체가 들어 있습니다. 이 파일을 휴대폰으로 옮겨 브라우저에서 열면 됩니다. 글꼴과 녹음 음성은 인터넷(https://2nhyeok.kr/jpnst/)에서 불러오며, 연결이 없으면 기본 글꼴과 기기 음성을 씁니다.
 
 ### 방법 3. 컴퓨터에서 개발용으로 실행
 ```bash
@@ -225,9 +227,9 @@ tools/make-audio.py     녹음 음성 합성 (VOICEVOX, 인터넷 없이 만드�
 tools/build-app.js      Android 앱용 웹 파일(www/) 만들기 — 글꼴을 앱에 넣고 서비스 워커 끔
 tools/make-android-icons.js  Android 앱 아이콘 생성
 app/native.js           앱 전용 연동 (뒤로 가기 버튼, 백업 공유, 상태 표시줄, 플레이 판 광고 배너·동의)
-install/index.html      2nhyeok.kr/install — 누구나 쓰는 설치 링크 (기기·브라우저를 알아보고 맞는 방법을 보여 줌) · qr.svg·qr.png·og.png
-apk/index.html          2nhyeok.kr/apk — Android 앱 설치 안내·문제 해결 페이지
-privacy/index.html      2nhyeok.kr/privacy — 개인정보처리방침 (플레이 판 광고 포함)
+install/index.html      2nhyeok.kr/jpnst/install — 누구나 쓰는 설치 링크 (기기·브라우저를 알아보고 맞는 방법을 보여 줌) · qr.svg·qr.png·og.png
+apk/index.html          2nhyeok.kr/jpnst/apk — Android 앱 설치 안내·문제 해결 페이지
+privacy/index.html      2nhyeok.kr/jpnst/privacy — 개인정보처리방침 (플레이 판 광고 포함)
 store/                  구글 플레이 등록 글(listing-ko.md)·아이콘·대표 이미지·스크린샷
 tools/make-store-assets.js  스토어 그림 만들기 (실제 앱 화면을 Playwright로 캡처)
 docs/PLAY-STORE.md      구글 플레이 출시 안내 (계정·신고·테스트·애드몹)

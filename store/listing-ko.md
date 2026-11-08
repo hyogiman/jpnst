@@ -67,7 +67,7 @@ Play Console → **스토어 등록정보 → 기본 스토어 등록정보**에
 · 회원가입이 없고, 학습 기록은 이 기기 안에만 저장됩니다. 앱을 지우면 기록도 지워지니 '나 → 백업 내보내기'로 가끔 백업해 주세요.
 · 만 18세 이상을 대상으로 합니다.
 
-개인정보처리방침: https://2nhyeok.kr/privacy/
+개인정보처리방침: https://2nhyeok.kr/jpnst/privacy/
 문의: https://github.com/hyogiman/jpnst/issues
 ```
 
@@ -103,6 +103,6 @@ Play Console → **스토어 등록정보 → 기본 스토어 등록정보**에
 | 카테고리 | 교육 |
 | 태그 | 고를 수 있는 목록에서 '언어 학습'에 가까운 것 (최대 5개) |
 | 이메일 주소 (필수, 공개됨) | 앱 문의용으로 따로 만든 메일을 권장 (개인 메일이 스토어에 그대로 공개됨) |
-| 웹사이트 | `https://2nhyeok.kr` (애드몹 app-ads.txt를 찾는 주소라 꼭 이 주소로) |
+| 웹사이트 | `https://2nhyeok.kr/jpnst/` (애드몹은 이 주소의 도메인 맨 위 `https://2nhyeok.kr/app-ads.txt`를 찾음 → 파일은 대표 사이트 저장소 `hyogiman.github.io`에) |
 | 전화번호 | 비워 두기 (선택 사항) |
-| 개인정보처리방침 | `https://2nhyeok.kr/privacy/` |
+| 개인정보처리방침 | `https://2nhyeok.kr/jpnst/privacy/` |

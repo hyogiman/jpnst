@@ -130,7 +130,7 @@
 
   /* ================= UI 상태 ================= */
   var ui = { tab: 'home', chapter: null, kanaScript: 'H', bookTab: 'vocab', bookQuery: '', bookAll: false, resetArm: false, iosHint: false };
-  // 설치 안내(2nhyeok.kr/install)에서 'Safari에서 열기'로 온 아이폰·아이패드: 마지막 단계(공유 → 홈 화면에 추가)를 화면 위에 보여 줌
+  // 설치 안내(2nhyeok.kr/jpnst/install)에서 'Safari에서 열기'로 온 아이폰·아이패드: 마지막 단계(공유 → 홈 화면에 추가)를 화면 위에 보여 줌
   (function () {
     var ua = navigator.userAgent || '';
     var ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
@@ -699,9 +699,9 @@
       '<div class="danger-zone"><div class="row" style="justify-content:space-between"><div><div class="l">처음부터 다시 시작</div><div class="small muted">모든 진도·복습·배지가 지워집니다.</div></div><button class="btn sm bad" data-act="reset">' + (ui.resetArm ? '한 번 더 누르면 삭제' : '초기화') + '</button></div></div></section>';
   }
   // 설치형 앱: 새 버전이 있으면 홈에 알림 (app/native.js가 JP.update를 채움)
-  var APK_PAGE = 'https://2nhyeok.kr/apk/';
-  var INSTALL_URL = 'https://2nhyeok.kr/install/';         // 누구나 쓰는 설치 링크 (기기에 맞는 방법이 열림)
-  var PRIVACY_URL = 'https://2nhyeok.kr/privacy/';
+  var APK_PAGE = 'https://2nhyeok.kr/jpnst/apk/';
+  var INSTALL_URL = 'https://2nhyeok.kr/jpnst/install/';         // 누구나 쓰는 설치 링크 (기기에 맞는 방법이 열림)
+  var PRIVACY_URL = 'https://2nhyeok.kr/jpnst/privacy/';
   // 앱 파일은 GitHub에서 바로 받음 (2nhyeok.kr 사이트에 연결이 안 돼도 내려받을 수 있게)
   var APK_URL = 'https://github.com/hyogiman/jpnst/releases/latest/download/animimi.apk';
   function updateBanner() {
@@ -726,7 +726,7 @@
       '<p class="small" style="margin:0"><b>Android</b> · 앱 파일(APK)을 내려받아 설치하면 인터넷 없이도 모든 글자·음성으로 학습할 수 있어요.</p>' +
       '<a class="btn block" href="' + APK_URL + '" rel="noopener">Android 앱 내려받기 (APK)</a>' +
       '<ol class="small muted" style="margin:0;padding-left:18px;line-height:1.7"><li>내려받은 <b>animimi.apk</b>를 눌러 엽니다.</li><li>처음 한 번 "출처를 알 수 없는 앱" 설치를 허용합니다 (Chrome 또는 내 파일 앱).</li><li>설치 → 열기. 새 버전도 같은 방법으로 덮어 설치하면 기록이 유지됩니다.</li></ol>' +
-      '<p class="small muted" style="margin:0">다운로드가 100%에서 멈추면 <b>Chrome 앱</b> 주소창에 <b>2nhyeok.kr/apk</b>를 입력해 안내대로 받아 주세요. (카카오톡 등 다른 앱 안의 브라우저에서는 멈출 수 있어요)</p>' +
+      '<p class="small muted" style="margin:0">다운로드가 100%에서 멈추면 <b>Chrome 앱</b> 주소창에 <b>2nhyeok.kr/jpnst/apk</b>를 입력해 안내대로 받아 주세요. (카카오톡 등 다른 앱 안의 브라우저에서는 멈출 수 있어요)</p>' +
       '<p class="small muted" style="margin:0">이 브라우저의 학습 기록은 앱으로 자동으로 옮겨지지 않아요. 먼저 아래 <b>백업 내보내기</b>를 한 뒤, 앱의 나 → <b>백업 불러오기</b>로 옮기세요.</p>' +
       '<p class="small muted" style="margin:0"><b>iPhone</b> · Safari로 이 페이지를 열고 공유 버튼 → <b>홈 화면에 추가</b>. 한 번 연 뒤에는 오프라인에서도 동작합니다.</p></section>';
   }
